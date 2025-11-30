@@ -9,4 +9,6 @@ export interface Item {
   type: ItemType;
   priority: Priority;
   dateAdded: string;
+  isArchived?: boolean;
+  dateArchived?: string | null;
 }

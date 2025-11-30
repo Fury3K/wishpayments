@@ -3,38 +3,36 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { PiggyBank, Mail, Lock, Github, Command } from 'lucide-react';
+import { Mail, Lock, User, Command, Github } from 'lucide-react';
 import { Navbar } from '../components/Navbar';
 import axios from 'axios';
-import { toast } from 'react-hot-toast';
+import { toast } from 'react-hot-toast'; // Assuming react-hot-toast is installed or will be.
 
-export default function LoginPage() {
+export default function RegisterPage() {
   const router = useRouter();
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
+  const handleRegister = async (e: React.FormEvent) => {
+      e.preventDefault();
+      setLoading(true);
+      setError('');
 
-    console.log('Sending login request for:', email);
-
-    try {
-        const response = await axios.post('/api/auth/login', { email, password });
-        if (response.data.token) {
-            localStorage.setItem('token', response.data.token);
-            toast.success('Login successful!');
-            router.push('/dashboard');
-        }
-    } catch (err: any) {
-        setError(err.response?.data?.message || 'Login failed');
-        toast.error(err.response?.data?.message || 'Login failed');
-    } finally {
-        setLoading(false);
-    }
+      try {
+          const response = await axios.post('/api/auth/register', { name, email, password });
+          if (response.status === 201) {
+              toast.success('Registration successful! Please log in.');
+              router.push('/login');
+          }
+      } catch (err: any) {
+          setError(err.response?.data?.message || 'Registration failed');
+          toast.error(err.response?.data?.message || 'Registration failed');
+      } finally {
+          setLoading(false);
+      }
   };
 
   return (
@@ -44,11 +42,32 @@ export default function LoginPage() {
       <div className="flex-1 flex flex-col justify-center items-center p-4">
         <div className="card w-full max-w-sm bg-base-100 shadow-xl">
             <div className="card-body">
-                <h2 className="card-title text-2xl font-bold text-center justify-center mb-2">Welcome Back!</h2>
-                <p className="text-center text-base-content/70 mb-6">Login to track your financial goals.</p>
+                <h2 className="card-title text-2xl font-bold text-center justify-center mb-2">Create Account</h2>
+                <p className="text-center text-base-content/70 mb-6">Start tracking your financial goals today.</p>
 
-                <form className="space-y-4" onSubmit={handleLogin}>
+                <form className="space-y-4" onSubmit={handleRegister}>
                     {error && <div className="alert alert-error">{error}</div>}
+                    <div className="form-control">
+                        <label className="label">
+                            <span className="label-text">Full Name</span>
+                        </label>
+                        <label className="input-group">
+                            <div className="relative w-full">
+                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <User className="h-5 w-5 text-base-content/50" />
+                                </div>
+                                <input
+                                    type="text"
+                                    placeholder="John Doe"
+                                    className="input input-bordered w-full pl-10"
+                                    value={name}
+                                    onChange={(e) => setName(e.target.value)}
+                                    required
+                                />
+                            </div>
+                        </label>
+                    </div>
+
                     <div className="form-control">
                         <label className="label">
                             <span className="label-text">Email</span>
@@ -58,10 +77,10 @@ export default function LoginPage() {
                                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                     <Mail className="h-5 w-5 text-base-content/50" />
                                 </div>
-                                <input 
-                                    type="email" 
-                                    placeholder="hello@example.com" 
-                                    className="input input-bordered w-full pl-10" 
+                                <input
+                                    type="email"
+                                    placeholder="hello@example.com"
+                                    className="input input-bordered w-full pl-10"
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
                                     required
@@ -79,23 +98,20 @@ export default function LoginPage() {
                                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                     <Lock className="h-5 w-5 text-base-content/50" />
                                 </div>
-                                <input 
-                                    type="password" 
-                                    placeholder="••••••••" 
-                                    className="input input-bordered w-full pl-10" 
+                                <input
+                                    type="password"
+                                    placeholder="••••••••"
+                                    className="input input-bordered w-full pl-10"
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
                                     required
                                 />
                             </div>
                         </label>
-                        <label className="label">
-                            <a href="#" className="label-text-alt link link-hover">Forgot password?</a>
-                        </label>
                     </div>
 
                     <button className="btn btn-primary w-full mt-4" type="submit" disabled={loading}>
-                        {loading ? <span className="loading loading-spinner"></span> : 'Log In'}
+                        {loading ? <span className="loading loading-spinner"></span> : 'Sign Up'}
                     </button>
                 </form>
 
@@ -113,9 +129,9 @@ export default function LoginPage() {
                 </div>
 
                 <div className="text-center mt-6 text-sm">
-                    Don't have an account?{' '}
-                    <Link href="/register" className="link link-primary font-semibold">
-                        Sign up
+                    Already have an account?{' '}
+                    <Link href="/login" className="link link-primary font-semibold">
+                        Log in
                     </Link>
                 </div>
             </div>

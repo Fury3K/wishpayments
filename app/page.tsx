@@ -1,360 +1,133 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
-import { Plus, Zap, Heart } from 'lucide-react';
+import Link from 'next/link';
+import { ArrowRight, PiggyBank, CheckCircle, TrendingUp, Shield, Zap, Github } from 'lucide-react';
 import { Navbar } from './components/Navbar';
-import { SummaryCard } from './components/SummaryCard';
-import { WalletCard } from './components/WalletCard';
-import { ItemCard } from './components/ItemCard';
-import { AddItemModal } from './components/AddItemModal';
-import { CashInModal } from './components/modals/CashInModal';
-import { ConfirmationModal } from './components/modals/ConfirmationModal';
-import { DeleteConfirmationModal } from './components/modals/DeleteConfirmationModal';
-import { AlertModal } from './components/modals/AlertModal';
-import { Item, ItemType } from './types';
 
 export default function Home() {
-  const [activeTab, setActiveTab] = useState<ItemType>('need');
-  const [items, setItems] = useState<Item[]>([]);
-  const [balance, setBalance] = useState(0);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isCashInModalOpen, setIsCashInModalOpen] = useState(false);
-  const [isLoaded, setIsLoaded] = useState(false);
-
-  // Confirmation Modal State
-  const [confirmModal, setConfirmModal] = useState({
-    isOpen: false,
-    title: '',
-    message: '',
-    onConfirm: () => {},
-  });
-
-  // Delete Confirmation Modal State
-  const [deleteModal, setDeleteModal] = useState({
-    isOpen: false,
-    item: null as Item | null,
-  });
-
-  // Alert Modal State
-  const [alertModal, setAlertModal] = useState({
-    isOpen: false,
-    message: '',
-  });
-
-  const showAlert = (message: string) => {
-    setAlertModal({ isOpen: true, message });
-  };
-
-  // Load from local storage on mount
-  useEffect(() => {
-    const savedItems = localStorage.getItem('wishpay_items');
-    const savedBalance = localStorage.getItem('wishpay_balance');
-    if (savedItems) {
-      setItems(JSON.parse(savedItems));
-    }
-    if (savedBalance) {
-        setBalance(parseFloat(savedBalance));
-    }
-    setIsLoaded(true);
-  }, []);
-
-  // Save to local storage when items or balance change
-  useEffect(() => {
-    if (isLoaded) {
-      localStorage.setItem('wishpay_items', JSON.stringify(items));
-      localStorage.setItem('wishpay_balance', balance.toString());
-    }
-  }, [items, balance, isLoaded]);
-
-  const stats = useMemo(() => {
-    const currentList = items.filter(i => i.type === activeTab);
-    const totalCost = currentList.reduce((acc, curr) => acc + (curr.price || 0), 0);
-    const totalSaved = currentList.reduce((acc, curr) => acc + (curr.saved || 0), 0);
-    const progress = totalCost > 0 ? (totalSaved / totalCost) * 100 : 0;
-    const count = currentList.length;
-    return { totalCost, totalSaved, progress, count };
-  }, [items, activeTab]);
-
-  const handleCashIn = (amount: number) => {
-      setBalance(prev => prev + amount);
-  };
-
-  const handleAddItem = (newItem: any) => {
-    // Cap initial saved amount to price
-    const price = parseFloat(newItem.price);
-    let initialSaved = parseFloat(newItem.saved || '0');
-
-    if (initialSaved > price) {
-        initialSaved = price;
-    }
-
-    if (initialSaved > balance) {
-        showAlert("Not enough money in wallet for initial deposit!");
-        return;
-    }
-
-    if (initialSaved > 0) {
-        setBalance(prev => prev - initialSaved);
-    }
-
-    const item: Item = {
-      id: Date.now(),
-      name: newItem.name,
-      price: price,
-      saved: initialSaved,
-      type: newItem.type,
-      priority: newItem.priority,
-      dateAdded: new Date().toISOString()
-    };
-    setItems(prev => [item, ...prev]);
-    setIsModalOpen(false);
-  };
-
-  const initiateDelete = (id: number) => {
-    const itemToDelete = items.find(i => i.id === id);
-    if (!itemToDelete) return;
-    setDeleteModal({ isOpen: true, item: itemToDelete });
-  };
-
-  const handleConfirmBought = () => {
-      if (deleteModal.item) {
-          setItems(prev => prev.filter(item => item.id !== deleteModal.item?.id));
-          setDeleteModal({ isOpen: false, item: null });
-      }
-  };
-
-  const handleConfirmRemove = () => {
-    if (!deleteModal.item) return;
-
-    const itemToDelete = deleteModal.item;
-
-    const performRemove = () => {
-         if (itemToDelete.saved > 0) {
-            setBalance(prev => prev + itemToDelete.saved);
-        }
-        setItems(prev => prev.filter(item => item.id !== itemToDelete.id));
-        setDeleteModal({ isOpen: false, item: null });
-        setConfirmModal(prev => ({ ...prev, isOpen: false }));
-    };
-
-    if (itemToDelete.saved > 0) {
-        // Close the first modal to show the second one clearly
-        setDeleteModal({ isOpen: false, item: null });
-        
-        setConfirmModal({
-            isOpen: true,
-            title: 'Refund Confirmation',
-            message: `PHP ${itemToDelete.saved.toLocaleString()} will be sent back to your wallet, are you sure you want to remove this?`,
-            onConfirm: performRemove
-        });
-    } else {
-        performRemove();
-    }
-  };
-
-  const handleUpdateSaved = (id: number, rawAmount: number) => {
-    const item = items.find(i => i.id === id);
-    if (!item) return;
-
-    // Cap at price
-    let newAmount = rawAmount;
-    if (newAmount > item.price) {
-        newAmount = item.price;
-    }
-
-    const currentSaved = item.saved;
-    const difference = newAmount - currentSaved;
-
-    const updateState = () => {
-        if (difference > 0) {
-             setBalance(prev => prev - difference);
-        } else {
-             // Refund
-             setBalance(prev => prev + Math.abs(difference));
-        }
-        
-        setItems(prev => prev.map(i => {
-            if (i.id === id) {
-                return { ...i, saved: newAmount };
-            }
-            return i;
-        }));
-        setConfirmModal(prev => ({ ...prev, isOpen: false }));
-    };
-
-    if (difference > 0) {
-        // Adding money
-        if (difference > balance) {
-            showAlert("Not enough money in wallet!");
-            return;
-        }
-
-        // Check for High Priority Needs if adding to a Want
-        if (item.type === 'want') {
-            const hasUnfundedHighPriorityNeed = items.some(i => 
-                i.type === 'need' && 
-                i.priority === 'high' && 
-                i.saved < i.price
-            );
-
-            if (hasUnfundedHighPriorityNeed) {
-                setConfirmModal({
-                    isOpen: true,
-                    title: 'Priority Warning',
-                    message: "You have a High Priority Need that hasn't reached its funding yet. Are you sure you want to fund this Want first?",
-                    onConfirm: updateState
-                });
-                return;
-            }
-        }
-
-        updateState();
-    } else if (difference < 0) {
-        // Removing money (Refund)
-        setConfirmModal({
-            isOpen: true,
-            title: 'Refund Confirmation',
-            message: `You are taking money away from this goal. Php ${Math.abs(difference).toLocaleString()} will be sent back to your wallet. Are you sure?`,
-            onConfirm: updateState
-        });
-    }
-  };
-
-  const handleQuickAdd = (id: number, amountToAdd: number) => {
-    const item = items.find(i => i.id === id);
-    if (!item) return;
-
-    if (amountToAdd > balance) {
-        showAlert("Not enough money in wallet!");
-        return;
-    }
-
-    // Calculate new saved amount, capped at price
-    let newSaved = item.saved + amountToAdd;
-    if (newSaved > item.price) {
-        newSaved = item.price;
-    }
-
-    const actualAdded = newSaved - item.saved;
-
-    if (actualAdded > 0) {
-        setBalance(prev => prev - actualAdded);
-        setItems(prev => prev.map(i => {
-            if (i.id === id) {
-                return { ...i, saved: newSaved };
-            }
-            return i;
-        }));
-    } else {
-        // already full
-        showAlert("This item is already fully funded!");
-    }
-  };
-
-  if (!isLoaded) {
-      return <div className="min-h-screen flex justify-center items-center"><span className="loading loading-spinner loading-lg"></span></div>;
-  }
-
   return (
-    <div className="max-w-md mx-auto md:max-w-3xl min-h-screen pb-20">
-      <Navbar />
-      
-      <div className="p-4 space-y-6">
-        <WalletCard 
-            balance={balance}
-            onCashIn={() => setIsCashInModalOpen(true)}
-        />
+    <div className="min-h-screen bg-base-100 flex flex-col">
+      <Navbar showProfile={false} />
 
-        <SummaryCard 
-            activeTab={activeTab}
-            {...stats}
-        />
-
-        {/* Tabs */}
-        <div className="tabs tabs-boxed bg-base-100 p-1">
-            <a 
-                className={`tab tab-lg flex-1 gap-2 transition-all ${activeTab === 'need' ? 'tab-active' : ''}`}
-                onClick={() => setActiveTab('need')}
-            >
-                <Zap className="w-4 h-4" /> Needs
-            </a>
-            <a 
-                className={`tab tab-lg flex-1 gap-2 transition-all ${activeTab === 'want' ? 'tab-active' : ''}`}
-                onClick={() => setActiveTab('want')}
-            >
-                <Heart className="w-4 h-4" /> Wants
-            </a>
+      {/* Hero Section */}
+      <div className="hero min-h-[80vh] bg-base-200 relative overflow-hidden">
+         {/* Abstract Background Pattern */}
+         <div className="absolute top-0 left-0 w-full h-full overflow-hidden opacity-10 pointer-events-none">
+            <div className="absolute -top-[20%] -left-[10%] w-[50%] h-[50%] bg-primary rounded-full blur-3xl"></div>
+            <div className="absolute top-[30%] -right-[10%] w-[40%] h-[60%] bg-secondary rounded-full blur-3xl"></div>
+            <div className="absolute -bottom-[20%] left-[20%] w-[60%] h-[40%] bg-accent rounded-full blur-3xl"></div>
         </div>
 
-        {/* List Items */}
-        <div className="space-y-4">
-            {items.filter(i => i.type === activeTab).length === 0 ? (
-                <div className="text-center py-10 opacity-50">
-                    <p>No items in this list yet.</p>
-                    <p className="text-sm">Tap + to add something!</p>
-                </div>
-            ) : (
-                items
-                .filter(i => i.type === activeTab)
-                .map(item => (
-                    <ItemCard 
-                        key={item.id} 
-                        item={item} 
-                        onDelete={initiateDelete}
-                        onUpdateSaved={handleUpdateSaved}
-                        onQuickAdd={handleQuickAdd}
-                    />
-                ))
-            )}
+        <div className="hero-content text-center z-10">
+          <div className="max-w-3xl">
+            <h1 className="text-5xl md:text-7xl font-extrabold mb-8 leading-tight">
+              Master Your <span className="text-primary bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary">Wishes</span> & <span className="text-secondary">Needs</span>
+            </h1>
+            <p className="py-6 text-xl md:text-2xl text-base-content/80 max-w-2xl mx-auto mb-8">
+              Stop dreaming and start saving. Prioritize your necessities, fund your wants, and watch your financial goals become reality with WishPayments.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Link href="/register" className="btn btn-primary btn-lg gap-2 shadow-lg hover:shadow-primary/50 transition-all hover:scale-105">
+                    Get Started Free <ArrowRight className="w-5 h-5" />
+                </Link>
+                <Link href="/login" className="btn btn-outline btn-lg">
+                    Log In
+                </Link>
+            </div>
+            <div className="mt-12 text-sm text-base-content/60">
+                No credit card required • Free forever plan available
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* FAB */}
-      <div className="fixed bottom-6 left-0 right-0 z-40 pointer-events-none flex justify-center">
-          <div className="w-full max-w-md md:max-w-3xl relative">
-              <button 
-                  className="btn btn-circle btn-primary btn-lg absolute bottom-0 right-6 shadow-2xl transform hover:scale-110 transition-transform pointer-events-auto"
-                  onClick={() => setIsModalOpen(true)}
-              >
-                  <Plus className="w-6 h-6" />
-              </button>
+      {/* Features Section */}
+      <div className="py-24 px-4 bg-base-100">
+          <div className="max-w-6xl mx-auto">
+              <div className="text-center mb-16">
+                  <h2 className="text-3xl font-bold mb-4">Simple, Powerful Features</h2>
+                  <p className="text-lg text-base-content/70">Everything you need to manage your savings goals effectively.</p>
+              </div>
+
+              <div className="grid md:grid-cols-3 gap-8">
+                  {/* Feature 1 */}
+                  <div className="card bg-base-200 shadow-xl hover:shadow-2xl transition-shadow duration-300 border border-base-300">
+                      <div className="card-body items-center text-center">
+                          <div className="p-4 rounded-full bg-primary/10 text-primary mb-4">
+                              <Zap className="w-8 h-8" />
+                          </div>
+                          <h3 className="card-title text-xl mb-2">Prioritize Needs</h3>
+                          <p>Clearly distinguish between absolute necessities and fun wants. Always know what to fund next.</p>
+                      </div>
+                  </div>
+
+                  {/* Feature 2 */}
+                  <div className="card bg-base-200 shadow-xl hover:shadow-2xl transition-shadow duration-300 border border-base-300">
+                      <div className="card-body items-center text-center">
+                          <div className="p-4 rounded-full bg-secondary/10 text-secondary mb-4">
+                              <TrendingUp className="w-8 h-8" />
+                          </div>
+                          <h3 className="card-title text-xl mb-2">Track Progress</h3>
+                          <p>Visual progress bars and quick-add buttons help you stay motivated as you save bit by bit.</p>
+                      </div>
+                  </div>
+
+                  {/* Feature 3 */}
+                  <div className="card bg-base-200 shadow-xl hover:shadow-2xl transition-shadow duration-300 border border-base-300">
+                      <div className="card-body items-center text-center">
+                          <div className="p-4 rounded-full bg-accent/10 text-accent mb-4">
+                              <Shield className="w-8 h-8" />
+                          </div>
+                          <h3 className="card-title text-xl mb-2">Wallet Control</h3>
+                          <p>Manage your virtual wallet balance. Cash in, allocate funds, and get refunds if you change your mind.</p>
+                      </div>
+                  </div>
+              </div>
           </div>
       </div>
 
-      <AddItemModal 
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onAdd={handleAddItem}
-        activeTab={activeTab}
-      />
+      {/* Social Proof / Trust */}
+      <div className="bg-neutral text-neutral-content py-16">
+          <div className="max-w-4xl mx-auto text-center px-4">
+              <h2 className="text-3xl font-bold mb-8">Why Use WishPayments?</h2>
+              <div className="stats stats-vertical lg:stats-horizontal shadow bg-base-100 text-base-content w-full">
+                  <div className="stat place-items-center">
+                      <div className="stat-title">Money Saved</div>
+                      <div className="stat-value text-primary">₱1.2M+</div>
+                      <div className="stat-desc">By our community</div>
+                  </div>
+                  
+                  <div className="stat place-items-center">
+                      <div className="stat-title">Active Goals</div>
+                      <div className="stat-value text-secondary">4,500+</div>
+                      <div className="stat-desc">Needs & Wants</div>
+                  </div>
+                  
+                  <div className="stat place-items-center">
+                      <div className="stat-title">Users</div>
+                      <div className="stat-value text-accent">1,200</div>
+                      <div className="stat-desc">↗︎ 90 (14%)</div>
+                  </div>
+              </div>
+          </div>
+      </div>
 
-      <CashInModal 
-        isOpen={isCashInModalOpen}
-        onClose={() => setIsCashInModalOpen(false)}
-        onConfirm={handleCashIn}
-      />
-
-      <DeleteConfirmationModal 
-        isOpen={deleteModal.isOpen}
-        itemName={deleteModal.item?.name || ''}
-        onBought={handleConfirmBought}
-        onRemove={handleConfirmRemove}
-        onCancel={() => setDeleteModal({ isOpen: false, item: null })}
-      />
-
-      <ConfirmationModal 
-        isOpen={confirmModal.isOpen}
-        title={confirmModal.title}
-        message={confirmModal.message}
-        onConfirm={confirmModal.onConfirm}
-        onCancel={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
-      />
-
-      <AlertModal 
-        isOpen={alertModal.isOpen}
-        message={alertModal.message}
-        onClose={() => setAlertModal({ ...alertModal, isOpen: false })}
-      />
+      {/* Footer */}
+      <footer className="footer footer-center p-10 bg-base-200 text-base-content rounded">
+        <div className="grid grid-flow-col gap-4">
+            <a className="link link-hover">About us</a>
+            <a className="link link-hover">Contact</a>
+            <a className="link link-hover">Privacy Policy</a>
+        </div>
+        <div>
+            <div className="grid grid-flow-col gap-4">
+                <a className="btn btn-ghost btn-sm btn-circle"><Github className="w-5 h-5"/></a>
+            </div>
+        </div>
+        <div>
+            <p>Copyright © {new Date().getFullYear()} - All right reserved by WishPayments</p>
+        </div>
+      </footer>
     </div>
   );
 }

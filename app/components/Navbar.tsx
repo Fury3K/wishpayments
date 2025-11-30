@@ -1,10 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { PiggyBank, Sun, Moon } from 'lucide-react';
+import { PiggyBank, Sun, Moon, User, LogOut, Settings, History } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
-export const Navbar = ({ showProfile = true }: { showProfile?: boolean }) => {
+export const Navbar = ({ showProfile = true, onLogout }: { showProfile?: boolean, onLogout?: () => void }) => {
+  const router = useRouter();
   const [theme, setTheme] = useState('cupcake');
   const [mounted, setMounted] = useState(false);
 
@@ -26,6 +28,10 @@ export const Navbar = ({ showProfile = true }: { showProfile?: boolean }) => {
     document.documentElement.setAttribute('data-theme', newTheme);
   };
 
+  const handleLogout = () => {
+      router.push('/');
+  };
+
   // Prevent hydration mismatch by rendering a placeholder or consistent state until mounted
   // However, for a navbar icon, it's usually fine to just render. 
   // To be safe with icons switching, we can use the 'mounted' check.
@@ -33,7 +39,7 @@ export const Navbar = ({ showProfile = true }: { showProfile?: boolean }) => {
   return (
     <div className="navbar bg-base-100 shadow-sm sticky top-0 z-50">
         <div className="flex-1">
-            <Link href="/" className="btn btn-ghost normal-case text-xl text-primary gap-2">
+            <Link href={showProfile ? "/dashboard" : "/"} className="btn btn-ghost normal-case text-xl text-primary gap-2">
                 <PiggyBank className="w-5 h-5" /> WishPay
             </Link>
         </div>
@@ -57,13 +63,28 @@ export const Navbar = ({ showProfile = true }: { showProfile?: boolean }) => {
             </label>
 
             {showProfile && (
-                <button className="btn btn-square btn-ghost">
-                    <div className="avatar placeholder">
+                <div className="dropdown dropdown-end">
+                    <div tabIndex={0} role="button" className="btn btn-ghost btn-circle avatar placeholder">
                         <div className="bg-neutral/20 text-neutral-content rounded-full w-8 h-8 flex items-center justify-center">
                             <span className="text-xs font-bold text-neutral">ME</span>
                         </div>
-                    </div> 
-                </button>
+                    </div>
+                    <ul tabIndex={0} className="mt-3 z-[1] p-2 shadow menu menu-sm dropdown-content bg-base-100 rounded-box w-52">
+                        <li>
+                            <a className="justify-between">
+                                Update Profile
+                                <Settings className="w-4 h-4" />
+                            </a>
+                        </li>
+                        <li>
+                            <Link href="/history" className="justify-between">
+                                History
+                                <History className="w-4 h-4" />
+                            </Link>
+                        </li>
+                        <li><a onClick={onLogout || handleLogout} className="text-error">Logout <LogOut className="w-4 h-4" /></a></li>
+                    </ul>
+                </div>
             )}
         </div>
     </div>

@@ -1,15 +1,18 @@
 import { useState, useEffect } from 'react';
 import { ItemType, Priority } from '../types';
 
-interface AddItemModalProps {
+interface ItemModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onAdd: (item: any) => void;
+    onSave: (item: any) => void;
     activeTab: ItemType;
+    itemToEdit?: Item | null;
 }
 
-export const AddItemModal = ({ isOpen, onClose, onAdd, activeTab }: AddItemModalProps) => {
-    const [newItem, setNewItem] = useState({
+import { Item } from '../types';
+
+export const ItemModal = ({ isOpen, onClose, onSave, activeTab, itemToEdit }: ItemModalProps) => {
+    const [formData, setFormData] = useState({
         name: '',
         price: '',
         saved: '0',
@@ -18,20 +21,30 @@ export const AddItemModal = ({ isOpen, onClose, onAdd, activeTab }: AddItemModal
 
     useEffect(() => {
         if (isOpen) {
-            setNewItem({
-                name: '',
-                price: '',
-                saved: '0',
-                priority: 'medium'
-            });
+            if (itemToEdit) {
+                setFormData({
+                    name: itemToEdit.name,
+                    price: itemToEdit.price.toString(),
+                    saved: itemToEdit.saved.toString(),
+                    priority: itemToEdit.priority
+                });
+            } else {
+                setFormData({
+                    name: '',
+                    price: '',
+                    saved: '0',
+                    priority: 'medium'
+                });
+            }
         }
-    }, [isOpen]);
+    }, [isOpen, itemToEdit]);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        onAdd({
-            ...newItem,
-            type: activeTab
+        onSave({
+            ...formData,
+            type: activeTab,
+            id: itemToEdit?.id // Pass ID if editing
         });
     };
 
@@ -40,7 +53,9 @@ export const AddItemModal = ({ isOpen, onClose, onAdd, activeTab }: AddItemModal
     return (
         <div className="modal modal-open modal-bottom sm:modal-middle">
             <div className="modal-box">
-                <h3 className="font-bold text-lg mb-4">Add New {activeTab === 'need' ? 'Necessity' : 'Wish'}</h3>
+                <h3 className="font-bold text-lg mb-4">
+                    {itemToEdit ? 'Edit Item' : `Add New ${activeTab === 'need' ? 'Necessity' : 'Wish'}`}
+                </h3>
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div className="form-control w-full">
                         <label className="label">
@@ -50,8 +65,8 @@ export const AddItemModal = ({ isOpen, onClose, onAdd, activeTab }: AddItemModal
                             type="text" 
                             placeholder="e.g. Rent, iPhone 15" 
                             className="input input-bordered w-full" 
-                            value={newItem.name}
-                            onChange={e => setNewItem({...newItem, name: e.target.value})}
+                            value={formData.name}
+                            onChange={e => setFormData({...formData, name: e.target.value})}
                             required
                         />
                     </div>
@@ -65,11 +80,16 @@ export const AddItemModal = ({ isOpen, onClose, onAdd, activeTab }: AddItemModal
                                 type="number" 
                                 placeholder="0.00" 
                                 className="input input-bordered w-full" 
-                                value={newItem.price}
-                                onChange={e => setNewItem({...newItem, price: e.target.value})}
+                                value={formData.price}
+                                onChange={e => setFormData({...formData, price: e.target.value})}
                                 required
                             />
                         </div>
+                        {/* Only show Saved input when adding new item, or make it readonly/separate action for clarity? 
+                            For now, let's keep it editable but maybe we should rely on the main UI for updates. 
+                            Actually, editing price might affect saved ratio, so let's allow editing 'saved' here too carefully or just disable it.
+                            Let's keep it consistent with Add: allow editing.
+                        */}
                         <div className="form-control w-1/2">
                             <label className="label">
                                 <span className="label-text">Saved Already (₱)</span>
@@ -78,8 +98,10 @@ export const AddItemModal = ({ isOpen, onClose, onAdd, activeTab }: AddItemModal
                                 type="number" 
                                 placeholder="0.00" 
                                 className="input input-bordered w-full" 
-                                value={newItem.saved}
-                                onChange={e => setNewItem({...newItem, saved: e.target.value})}
+                                value={formData.saved}
+                                onChange={e => setFormData({...formData, saved: e.target.value})}
+                                // If editing, maybe we shouldn't easily change saved amount here to avoid conflict with wallet? 
+                                // Let's allow it but handle logic in parent.
                             />
                         </div>
                     </div>
@@ -91,8 +113,8 @@ export const AddItemModal = ({ isOpen, onClose, onAdd, activeTab }: AddItemModal
                             </label>
                             <select 
                                 className="select select-bordered"
-                                value={newItem.priority}
-                                onChange={e => setNewItem({...newItem, priority: e.target.value as Priority})}
+                                value={formData.priority}
+                                onChange={e => setFormData({...formData, priority: e.target.value as Priority})}
                             >
                                 <option value="high">🔥 High Priority</option>
                                 <option value="medium">⚡ Medium Priority</option>
@@ -103,7 +125,7 @@ export const AddItemModal = ({ isOpen, onClose, onAdd, activeTab }: AddItemModal
                     
                     <div className="modal-action">
                         <button type="button" className="btn" onClick={onClose}>Cancel</button>
-                        <button type="submit" className="btn btn-primary">Add Item</button>
+                        <button type="submit" className="btn btn-primary">{itemToEdit ? 'Save Changes' : 'Add Item'}</button>
                     </div>
                 </form>
             </div>
