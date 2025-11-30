@@ -1,0 +1,12 @@
+export type ItemType = 'need' | 'want';
+export type Priority = 'high' | 'medium' | 'low';
+
+export interface Item {
+  id: number;
+  name: string;
+  price: number;
+  saved: number;
+  type: ItemType;
+  priority: Priority;
+  dateAdded: string;
+}
