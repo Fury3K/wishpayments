@@ -37,7 +37,7 @@ export const Navbar = ({ showProfile = true, onLogout }: { showProfile?: boolean
     // To be safe with icons switching, we can use the 'mounted' check.
 
     return (
-        <div className="navbar bg-base-100 shadow-sm sticky top-0 z-50">
+        <div className="navbar bg-white/70 backdrop-blur-xl shadow-lg sticky top-4 z-50 rounded-2xl mx-4 sm:mx-auto max-w-7xl mt-4 border border-white/40">
             <div className="flex-1">
                 <Link href={showProfile ? "/dashboard" : "/"} className="btn btn-ghost normal-case text-xl text-primary gap-2">
                     <PiggyBank className="w-5 h-5" /> WishPay
