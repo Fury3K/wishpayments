@@ -4,40 +4,44 @@ import { useState, useEffect } from 'react';
 import { PiggyBank, Sun, Moon, User, LogOut, Settings, History } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useTheme } from 'next-themes';
 
 export const Navbar = ({ showProfile = true, onLogout }: { showProfile?: boolean, onLogout?: () => void }) => {
     const router = useRouter();
-    const [theme, setTheme] = useState('cupcake');
+    const { theme, setTheme, resolvedTheme } = useTheme();
     const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
         setMounted(true);
-        const saved = localStorage.getItem('wishpay_theme');
-        if (saved) {
-            setTheme(saved);
-            // Apply theme immediately on mount
-            document.documentElement.setAttribute('data-theme', saved);
-        }
     }, []);
 
     const handleToggle = (e: React.ChangeEvent<HTMLInputElement>) => {
         const newTheme = e.target.checked ? 'dim' : 'cupcake';
         setTheme(newTheme);
-        localStorage.setItem('wishpay_theme', newTheme);
-        // Explicitly set it to ensure sync, though theme-controller does it too
-        document.documentElement.setAttribute('data-theme', newTheme);
     };
 
     const handleLogout = () => {
         router.push('/');
     };
 
-    // Prevent hydration mismatch by rendering a placeholder or consistent state until mounted
-    // However, for a navbar icon, it's usually fine to just render. 
-    // To be safe with icons switching, we can use the 'mounted' check.
+    // Prevent hydration mismatch
+    if (!mounted) {
+        // Render a simplified version or empty div to avoid layout shift, 
+        // or just return null if acceptable. 
+        // Returning a skeleton or non-interactive version is better.
+        return (
+             <div className="navbar bg-base-100/70 backdrop-blur-xl shadow-lg sticky top-4 z-50 rounded-2xl mx-4 sm:mx-auto max-w-7xl mt-4 border border-base-content/10">
+                <div className="flex-1">
+                     <a className="btn btn-ghost normal-case text-xl text-primary gap-2">
+                        <PiggyBank className="w-5 h-5" /> WishPay
+                    </a>
+                </div>
+             </div>
+        );
+    }
 
     return (
-        <div className="navbar bg-base-100 shadow-sm sticky top-0 z-50">
+        <div className="navbar bg-base-100/70 backdrop-blur-xl shadow-lg sticky top-4 z-50 rounded-2xl mx-4 sm:mx-auto max-w-7xl mt-4 border border-base-content/10">
             <div className="flex-1">
                 <Link href={showProfile ? "/dashboard" : "/"} className="btn btn-ghost normal-case text-xl text-primary gap-2">
                     <PiggyBank className="w-5 h-5" /> WishPay
@@ -49,16 +53,14 @@ export const Navbar = ({ showProfile = true, onLogout }: { showProfile?: boolean
                     {/* this hidden checkbox controls the state */}
                     <input
                         type="checkbox"
-                        className="theme-controller"
-                        value="dim"
-                        checked={theme === 'dim'}
+                        checked={resolvedTheme === 'dim' || theme === 'dim'}
                         onChange={handleToggle}
                     />
 
-                    {/* sun icon */}
+                    {/* sun icon (shows when checked is false -> cupcake) */}
                     <Sun className="swap-off w-5 h-5" />
 
-                    {/* moon icon */}
+                    {/* moon icon (shows when checked is true -> dim) */}
                     <Moon className="swap-on w-5 h-5" />
                 </label>
 

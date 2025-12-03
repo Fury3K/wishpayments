@@ -455,103 +455,118 @@ export default function Dashboard() {
     };
 
     if (loadingItems) {
-        return <div className="min-h-screen flex justify-center items-center"><span className="loading loading-spinner loading-lg"></span></div>;
+        return <div className="min-h-screen flex justify-center items-center bg-base-200"><span className="loading loading-spinner loading-lg"></span></div>;
     }
 
     return (
-        <div className="max-w-md mx-auto md:max-w-6xl min-h-screen pb-20">
-            <Navbar onLogout={handleLogout} />
+        <div className="min-h-screen pb-20 bg-base-200 relative">
+            {/* Background decoration */}
+            <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
+                <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/5 rounded-full blur-3xl -mr-20 -mt-20"></div>
+                <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-secondary/5 rounded-full blur-3xl -ml-20 -mb-20"></div>
+            </div>
 
-            <div className="p-4 space-y-6">
-                <WalletCard
-                    balance={balance}
-                    onCashIn={() => setIsCashInModalOpen(true)}
-                    onCashOut={() => setIsCashOutModalOpen(true)}
-                />
+            <div className="relative z-10">
+                <Navbar onLogout={handleLogout} />
 
-                <SummaryCard
-                    activeTab={activeTab}
-                    {...stats}
-                />
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                    {/* Wallet & Summary Grid */}
+                    <div className="grid md:grid-cols-2 gap-6 mb-8">
+                        <WalletCard
+                            balance={balance}
+                            onCashIn={() => setIsCashInModalOpen(true)}
+                            onCashOut={() => setIsCashOutModalOpen(true)}
+                        />
 
-                {/* Tabs */}
-                <div className="tabs tabs-boxed bg-base-100 p-1">
-                    <a
-                        className={`tab tab-lg flex-1 gap-2 transition-all ${activeTab === 'need' ? 'tab-active' : ''}`}
-                        onClick={() => setActiveTab('need')}
-                    >
-                        <Zap className="w-4 h-4" /> Needs
-                    </a>
-                    <a
-                        className={`tab tab-lg flex-1 gap-2 transition-all ${activeTab === 'want' ? 'tab-active' : ''}`}
-                        onClick={() => setActiveTab('want')}
-                    >
-                        <Heart className="w-4 h-4" /> Wants
-                    </a>
-                </div>
+                        <SummaryCard
+                            activeTab={activeTab}
+                            {...stats}
+                        />
+                    </div>
 
-                {/* List Items */}
-                <div className="space-y-4">
-                    {activeTab === 'need' && (
-                        <div className="flex justify-end px-2">
-                            <div className="dropdown dropdown-end">
-                                <div tabIndex={0} role="button" className="btn btn-sm btn-ghost gap-2 normal-case">
-                                    Sort by Priority: {sortOrder === 'desc' ? 'High to Low' : 'Low to High'}
+                    {/* Tabs */}
+                    <div className="tabs tabs-boxed bg-base-100/50 backdrop-blur-sm p-1.5 shadow-sm mb-6 rounded-2xl border border-base-content/10">
+                        <a
+                            className={`tab tab-lg flex-1 gap-2 transition-all rounded-xl ${activeTab === 'need' ? 'tab-active !bg-violet-600 !text-white shadow-md' : 'hover:bg-base-100/50'}`}
+                            onClick={() => setActiveTab('need')}
+                        >
+                            <Zap className="w-4 h-4" /> Needs
+                        </a>
+                        <a
+                            className={`tab tab-lg flex-1 gap-2 transition-all rounded-xl ${activeTab === 'want' ? 'tab-active !bg-pink-500 !text-white shadow-md' : 'hover:bg-base-100/50'}`}
+                            onClick={() => setActiveTab('want')}
+                        >
+                            <Heart className="w-4 h-4" /> Wants
+                        </a>
+                    </div>
+
+                    {/* List Items */}
+                    <div className="space-y-4">
+                        {activeTab === 'need' && (
+                            <div className="flex justify-end px-2">
+                                <div className="dropdown dropdown-end">
+                                    <div tabIndex={0} role="button" className="btn btn-sm btn-ghost gap-2 normal-case text-base-content/60 hover:bg-base-100/50">
+                                        Sort by Priority: {sortOrder === 'desc' ? 'High to Low' : 'Low to High'}
+                                    </div>
+                                    <ul tabIndex={0} className="dropdown-content z-[1] menu p-2 shadow-lg bg-base-100 rounded-xl w-52 border border-base-200 mt-2">
+                                        <li><a onClick={() => setSortOrder('desc')} className={sortOrder === 'desc' ? 'active bg-primary/10 text-primary' : ''}>High to Low</a></li>
+                                        <li><a onClick={() => setSortOrder('asc')} className={sortOrder === 'asc' ? 'active bg-primary/10 text-primary' : ''}>Low to High</a></li>
+                                    </ul>
                                 </div>
-                                <ul tabIndex={0} className="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-52">
-                                    <li><a onClick={() => setSortOrder('desc')} className={sortOrder === 'desc' ? 'active' : ''}>High to Low</a></li>
-                                    <li><a onClick={() => setSortOrder('asc')} className={sortOrder === 'asc' ? 'active' : ''}>Low to High</a></li>
-                                </ul>
                             </div>
-                        </div>
-                    )}
+                        )}
 
-                    {items.filter(i => i.type === activeTab).length === 0 ? (
-                        <div className="text-center py-10 opacity-50">
-                            <p>No items in this list yet.</p>
-                            <p className="text-sm">Tap + to add something!</p>
-                        </div>
-                    ) : (
-                        items
-                            .filter(i => i.type === activeTab)
-                            .sort((a, b) => {
-                                if (activeTab === 'want') {
-                                    // For 'want' tab, sort by ID (newest first)
-                                    return b.id - a.id;
+                        {items.filter(i => i.type === activeTab).length === 0 ? (
+                            <div className="text-center py-20 opacity-50">
+                                <div className="bg-base-100/50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                                    <Plus className="w-8 h-8 text-base-content/40" />
+                                </div>
+                                <p className="text-lg font-medium text-base-content/60">No items in this list yet.</p>
+                                <p className="text-sm text-base-content/40">Tap + to add something!</p>
+                            </div>
+                        ) : (
+                            <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+                                {items
+                                    .filter(i => i.type === activeTab)
+                                    .sort((a, b) => {
+                                        if (activeTab === 'want') {
+                                            // For 'want' tab, sort by ID (newest first)
+                                            return b.id - a.id;
+                                        }
+                                        // For 'need' tab, apply priority sorting
+                                        const priorityWeight = { high: 3, medium: 2, low: 1 };
+                                        const diff = priorityWeight[b.priority] - priorityWeight[a.priority];
+                                        return sortOrder === 'desc' ? diff : -diff;
+                                    })
+                                    .map(item => (
+                                        <ItemCard
+                                            key={item.id}
+                                            item={item}
+                                            onDelete={initiateDelete}
+                                            onUpdateSaved={handleUpdateSaved}
+                                            onQuickAdd={handleQuickAdd}
+                                            onEdit={handleEditItem}
+                                            onComplete={initiateComplete}
+                                        />
+                                    ))
                                 }
-                                // For 'need' tab, apply priority sorting
-                                const priorityWeight = { high: 3, medium: 2, low: 1 };
-                                const diff = priorityWeight[b.priority] - priorityWeight[a.priority];
-                                return sortOrder === 'desc' ? diff : -diff;
-                            })
-                            .map(item => (
-                                <ItemCard
-                                    key={item.id}
-                                    item={item}
-                                    onDelete={initiateDelete}
-                                    onUpdateSaved={handleUpdateSaved}
-                                    onQuickAdd={handleQuickAdd}
-                                    onEdit={handleEditItem}
-                                    onComplete={initiateComplete}
-                                />
-                            ))
-                    )}
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
 
             {/* FAB */}
-            <div className="fixed bottom-6 left-0 right-0 z-40 pointer-events-none flex justify-center">
-                <div className="w-full max-w-md md:max-w-3xl relative">
-                    <button
-                        className="btn btn-circle btn-primary btn-lg absolute bottom-0 right-6 shadow-2xl transform hover:scale-110 transition-transform pointer-events-auto"
-                        onClick={() => {
-                            setItemToEdit(null);
-                            setIsModalOpen(true);
-                        }}
-                    >
-                        <Plus className="w-6 h-6" />
-                    </button>
-                </div>
+            <div className="fixed bottom-8 right-8 z-50">
+                <button
+                    className="btn btn-circle btn-primary btn-lg shadow-xl shadow-violet-500/30 transform hover:scale-110 transition-all duration-300 border-none bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500"
+                    onClick={() => {
+                        setItemToEdit(null);
+                        setIsModalOpen(true);
+                    }}
+                >
+                    <Plus className="w-8 h-8 text-white" />
+                </button>
             </div>
 
             <ItemModal

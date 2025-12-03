@@ -8,13 +8,16 @@ import { addCorsHeaders, corsOptions } from '@/lib/cors';
 export const OPTIONS = corsOptions;
 
 // Helper function to get user ID from token
-async function getUserIdFromRequest(req: Request) {
+async function getUserIdFromRequest(req: Request): Promise<number | null> {
     const token = req.headers.get('Authorization')?.replace('Bearer ', '');
     if (!token) {
         return null;
     }
     const payload = await verifyJWT(token);
-    return payload?.userId;
+    if (!payload || typeof payload.userId !== 'number') {
+        return null;
+    }
+    return payload.userId;
 }
 
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
