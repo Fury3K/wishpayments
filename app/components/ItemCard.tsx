@@ -34,21 +34,21 @@ export const ItemCard = ({ item, onDelete, onUpdateSaved, onQuickAdd, onEdit, on
 
     const getPriorityColor = (priority: string) => {
         switch (priority) {
-            case 'high': return 'text-rose-500 bg-rose-50 border-rose-200';
-            case 'medium': return 'text-amber-500 bg-amber-50 border-amber-200';
-            case 'low': return 'text-emerald-500 bg-emerald-50 border-emerald-200';
-            default: return 'text-gray-500 bg-gray-50 border-gray-200';
+            case 'high': return 'text-rose-500 bg-rose-50 dark:bg-rose-900/20 border-rose-200 dark:border-rose-800';
+            case 'medium': return 'text-amber-500 bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800';
+            case 'low': return 'text-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800';
+            default: return 'text-base-content/70 bg-base-200 border-base-300';
         }
     };
 
     return (
-        <div className={`card bg-white shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 group ${isCompleted ? 'opacity-90' : ''}`}>
+        <div className={`card bg-base-100 shadow-lg hover:shadow-xl transition-all duration-300 border border-base-200 group ${isCompleted ? 'opacity-90' : ''}`}>
             <div className="card-body p-5">
                 {/* Header */}
                 <div className="flex justify-between items-start mb-4">
                     <div className="flex-1 min-w-0 pr-4">
                         <div className="flex items-center gap-2 mb-1">
-                            <h3 className={`font-bold text-lg truncate ${isCompleted ? 'line-through text-gray-400' : 'text-gray-800'}`}>
+                            <h3 className={`font-bold text-lg truncate ${isCompleted ? 'line-through text-base-content/50' : 'text-base-content'}`}>
                                 {item.name}
                             </h3>
                             {item.type === 'need' && (
@@ -57,18 +57,18 @@ export const ItemCard = ({ item, onDelete, onUpdateSaved, onQuickAdd, onEdit, on
                                 </span>
                             )}
                         </div>
-                        <div className="text-xs text-gray-400 font-medium">
+                        <div className="text-xs text-base-content/50 font-medium">
                             Added {new Date(item.dateAdded).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                         </div>
                     </div>
 
                     <div className="dropdown dropdown-end opacity-0 group-hover:opacity-100 transition-opacity">
-                        <label tabIndex={0} className="btn btn-ghost btn-xs btn-circle text-gray-400 hover:text-gray-600 hover:bg-gray-100">
+                        <label tabIndex={0} className="btn btn-ghost btn-xs btn-circle text-base-content/50 hover:text-base-content hover:bg-base-200">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" className="inline-block w-4 h-4 stroke-current"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"></path></svg>
                         </label>
-                        <ul tabIndex={0} className="dropdown-content z-[1] menu p-2 shadow-lg bg-white rounded-xl w-32 border border-gray-100 text-sm">
-                            <li><button onClick={() => onEdit(item)} className="hover:bg-gray-50 rounded-lg">Edit</button></li>
-                            <li><button onClick={() => onDelete(item.id)} className="text-rose-500 hover:bg-rose-50 rounded-lg">Delete</button></li>
+                        <ul tabIndex={0} className="dropdown-content z-[1] menu p-2 shadow-lg bg-base-100 rounded-xl w-32 border border-base-200 text-sm">
+                            <li><button onClick={() => onEdit(item)} className="hover:bg-base-200 rounded-lg">Edit</button></li>
+                            <li><button onClick={() => onDelete(item.id)} className="text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-lg">Delete</button></li>
                         </ul>
                     </div>
                 </div>
@@ -77,23 +77,23 @@ export const ItemCard = ({ item, onDelete, onUpdateSaved, onQuickAdd, onEdit, on
                 <div className="space-y-3">
                     <div className="flex justify-between items-baseline">
                         <div className="flex flex-col">
-                            <span className="text-xs text-gray-400 font-medium uppercase tracking-wider">Saved</span>
-                            <span className="text-xl font-bold text-gray-800">{formatPHP(item.saved)}</span>
+                            <span className="text-xs text-base-content/50 font-medium uppercase tracking-wider">Saved</span>
+                            <span className="text-xl font-bold text-base-content">{formatPHP(item.saved)}</span>
                         </div>
                         <div className="flex flex-col items-end">
-                            <span className="text-xs text-gray-400 font-medium uppercase tracking-wider">Target</span>
-                            <span className="text-sm font-semibold text-gray-600">{formatPHP(item.price)}</span>
+                            <span className="text-xs text-base-content/50 font-medium uppercase tracking-wider">Target</span>
+                            <span className="text-sm font-semibold text-base-content/70">{formatPHP(item.price)}</span>
                         </div>
                     </div>
 
-                    <div className="relative h-2.5 w-full bg-gray-100 rounded-full overflow-hidden">
+                    <div className="relative h-2.5 w-full bg-base-200 rounded-full overflow-hidden">
                         <div
                             className={`absolute top-0 left-0 h-full rounded-full transition-all duration-500 ${isCompleted ? 'bg-emerald-500' : 'bg-gradient-to-r from-violet-500 to-fuchsia-500'}`}
                             style={{ width: `${Math.min(100, Math.max(0, progress))}%` }}
                         ></div>
                     </div>
 
-                    <div className="text-xs text-right font-medium text-gray-400">
+                    <div className="text-xs text-right font-medium text-base-content/50">
                         {isCompleted ? (
                             <span className="text-emerald-600 flex items-center justify-end gap-1">
                                 <CheckCircle className="w-3 h-3" /> Fully Funded
@@ -106,11 +106,11 @@ export const ItemCard = ({ item, onDelete, onUpdateSaved, onQuickAdd, onEdit, on
 
                 {/* Actions */}
                 {!isCompleted && (
-                    <div className="mt-5 pt-4 border-t border-gray-50">
+                    <div className="mt-5 pt-4 border-t border-base-200">
                         {editMode ? (
                             <div className="join w-full shadow-sm">
                                 <input
-                                    className="input input-sm input-bordered join-item w-full focus:outline-none focus:border-violet-500"
+                                    className="input input-sm input-bordered join-item w-full focus:outline-none focus:border-violet-500 bg-base-100"
                                     type="number"
                                     min="0"
                                     value={localSaved}
@@ -129,7 +129,7 @@ export const ItemCard = ({ item, onDelete, onUpdateSaved, onQuickAdd, onEdit, on
                                     {[100, 200, 500, 1000].map((amount) => (
                                         <button
                                             key={amount}
-                                            className="btn btn-xs h-8 bg-violet-50 hover:bg-violet-100 text-violet-700 border-none rounded-lg font-semibold transition-colors"
+                                            className="btn btn-xs h-8 bg-violet-50 hover:bg-violet-100 text-violet-700 border-none rounded-lg font-semibold transition-colors dark:bg-violet-900/20 dark:hover:bg-violet-900/40 dark:text-violet-300"
                                             onClick={() => onQuickAdd(item.id, amount)}
                                             title={`Add ₱${amount}`}
                                         >
@@ -138,7 +138,7 @@ export const ItemCard = ({ item, onDelete, onUpdateSaved, onQuickAdd, onEdit, on
                                     ))}
                                 </div>
                                 <button
-                                    className="btn btn-sm btn-ghost w-full text-gray-500 hover:text-violet-600 hover:bg-violet-50 normal-case font-medium"
+                                    className="btn btn-sm btn-ghost w-full text-base-content/70 hover:text-violet-600 hover:bg-violet-50 dark:hover:bg-violet-900/20 normal-case font-medium"
                                     onClick={() => setEditMode(true)}
                                 >
                                     Update Custom Amount

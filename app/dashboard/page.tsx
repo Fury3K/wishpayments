@@ -455,15 +455,15 @@ export default function Dashboard() {
     };
 
     if (loadingItems) {
-        return <div className="min-h-screen flex justify-center items-center"><span className="loading loading-spinner loading-lg"></span></div>;
+        return <div className="min-h-screen flex justify-center items-center bg-base-200"><span className="loading loading-spinner loading-lg"></span></div>;
     }
 
     return (
-        <div className="min-h-screen pb-20 bg-slate-50 relative">
+        <div className="min-h-screen pb-20 bg-base-200 relative">
             {/* Background decoration */}
             <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
-                <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-violet-100/50 rounded-full blur-3xl -mr-20 -mt-20"></div>
-                <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-cyan-100/50 rounded-full blur-3xl -ml-20 -mb-20"></div>
+                <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/5 rounded-full blur-3xl -mr-20 -mt-20"></div>
+                <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-secondary/5 rounded-full blur-3xl -ml-20 -mb-20"></div>
             </div>
 
             <div className="relative z-10">
@@ -485,15 +485,15 @@ export default function Dashboard() {
                     </div>
 
                     {/* Tabs */}
-                    <div className="tabs tabs-boxed bg-white/50 backdrop-blur-sm p-1.5 shadow-sm mb-6 rounded-2xl border border-white/20">
+                    <div className="tabs tabs-boxed bg-base-100/50 backdrop-blur-sm p-1.5 shadow-sm mb-6 rounded-2xl border border-base-content/10">
                         <a
-                            className={`tab tab-lg flex-1 gap-2 transition-all rounded-xl ${activeTab === 'need' ? 'tab-active !bg-violet-600 !text-white shadow-md' : 'hover:bg-white/50'}`}
+                            className={`tab tab-lg flex-1 gap-2 transition-all rounded-xl ${activeTab === 'need' ? 'tab-active !bg-violet-600 !text-white shadow-md' : 'hover:bg-base-100/50'}`}
                             onClick={() => setActiveTab('need')}
                         >
                             <Zap className="w-4 h-4" /> Needs
                         </a>
                         <a
-                            className={`tab tab-lg flex-1 gap-2 transition-all rounded-xl ${activeTab === 'want' ? 'tab-active !bg-pink-500 !text-white shadow-md' : 'hover:bg-white/50'}`}
+                            className={`tab tab-lg flex-1 gap-2 transition-all rounded-xl ${activeTab === 'want' ? 'tab-active !bg-pink-500 !text-white shadow-md' : 'hover:bg-base-100/50'}`}
                             onClick={() => setActiveTab('want')}
                         >
                             <Heart className="w-4 h-4" /> Wants
@@ -505,12 +505,12 @@ export default function Dashboard() {
                         {activeTab === 'need' && (
                             <div className="flex justify-end px-2">
                                 <div className="dropdown dropdown-end">
-                                    <div tabIndex={0} role="button" className="btn btn-sm btn-ghost gap-2 normal-case text-gray-500 hover:bg-white/50">
+                                    <div tabIndex={0} role="button" className="btn btn-sm btn-ghost gap-2 normal-case text-base-content/60 hover:bg-base-100/50">
                                         Sort by Priority: {sortOrder === 'desc' ? 'High to Low' : 'Low to High'}
                                     </div>
-                                    <ul tabIndex={0} className="dropdown-content z-[1] menu p-2 shadow-lg bg-white rounded-xl w-52 border border-gray-100 mt-2">
-                                        <li><a onClick={() => setSortOrder('desc')} className={sortOrder === 'desc' ? 'active bg-violet-50 text-violet-600' : ''}>High to Low</a></li>
-                                        <li><a onClick={() => setSortOrder('asc')} className={sortOrder === 'asc' ? 'active bg-violet-50 text-violet-600' : ''}>Low to High</a></li>
+                                    <ul tabIndex={0} className="dropdown-content z-[1] menu p-2 shadow-lg bg-base-100 rounded-xl w-52 border border-base-200 mt-2">
+                                        <li><a onClick={() => setSortOrder('desc')} className={sortOrder === 'desc' ? 'active bg-primary/10 text-primary' : ''}>High to Low</a></li>
+                                        <li><a onClick={() => setSortOrder('asc')} className={sortOrder === 'asc' ? 'active bg-primary/10 text-primary' : ''}>Low to High</a></li>
                                     </ul>
                                 </div>
                             </div>
@@ -518,11 +518,11 @@ export default function Dashboard() {
 
                         {items.filter(i => i.type === activeTab).length === 0 ? (
                             <div className="text-center py-20 opacity-50">
-                                <div className="bg-white/50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                                    <Plus className="w-8 h-8 text-gray-400" />
+                                <div className="bg-base-100/50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                                    <Plus className="w-8 h-8 text-base-content/40" />
                                 </div>
-                                <p className="text-lg font-medium text-gray-600">No items in this list yet.</p>
-                                <p className="text-sm text-gray-400">Tap + to add something!</p>
+                                <p className="text-lg font-medium text-base-content/60">No items in this list yet.</p>
+                                <p className="text-sm text-base-content/40">Tap + to add something!</p>
                             </div>
                         ) : (
                             <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
