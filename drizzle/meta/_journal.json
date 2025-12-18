@@ -15,6 +15,13 @@
       "when": 1764527050680,
       "tag": "0001_smooth_paladin",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1766053716794,
+      "tag": "0002_colossal_chronomancer",
+      "breakpoints": true
     }
   ]
 }

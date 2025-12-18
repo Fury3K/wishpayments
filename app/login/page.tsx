@@ -3,8 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { PiggyBank, Mail, Lock, Github, Command } from 'lucide-react';
-import { Navbar } from '../components/Navbar';
+import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
 
@@ -12,6 +11,7 @@ export default function LoginPage() {
     const router = useRouter();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
 
@@ -19,8 +19,6 @@ export default function LoginPage() {
         e.preventDefault();
         setLoading(true);
         setError('');
-
-        console.log('Sending login request for:', email);
 
         try {
             const response = await axios.post('/api/auth/login', { email, password });
@@ -38,108 +36,93 @@ export default function LoginPage() {
     };
 
     return (
-        <div className="min-h-screen bg-base-200 flex flex-col relative overflow-hidden">
-            {/* Background decoration */}
-            <div className="fixed inset-0 z-0 pointer-events-none">
-                <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/10 rounded-full blur-3xl -mr-20 -mt-20 mix-blend-multiply dark:mix-blend-normal dark:opacity-20"></div>
-                <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-secondary/10 rounded-full blur-3xl -ml-20 -mb-20 mix-blend-multiply dark:mix-blend-normal dark:opacity-20"></div>
-            </div>
-
-            <div className="relative z-10 flex flex-col min-h-screen">
-                <Navbar showProfile={false} />
-
-                <div className="flex-1 flex flex-col justify-center items-center p-4">
-                    <div className="card w-full max-w-md bg-base-100/70 backdrop-blur-xl shadow-2xl border border-base-content/10 overflow-hidden">
-                        <div className="card-body p-8">
-                            <div className="text-center mb-6">
-                                <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-4 text-primary">
-                                    <PiggyBank className="w-6 h-6" />
-                                </div>
-                                <h2 className="text-2xl font-bold text-base-content">Welcome Back!</h2>
-                                <p className="text-base-content/60 mt-1">Login to track your financial goals.</p>
-                            </div>
-
-                            <form className="space-y-4" onSubmit={handleLogin}>
-                                {error && (
-                                    <div className="alert alert-error bg-error/10 text-error border-error/20 text-sm py-2 rounded-xl flex items-center gap-2">
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-5 w-5" fill="none" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                                        <span>{error}</span>
-                                    </div>
-                                )}
-
-                                <div className="form-control">
-                                    <label className="label pb-1">
-                                        <span className="label-text font-medium text-base-content/80">Email</span>
-                                    </label>
-                                    <div className="relative w-full">
-                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                            <Mail className="h-5 w-5 text-base-content/40" />
-                                        </div>
-                                        <input
-                                            type="email"
-                                            placeholder="hello@example.com"
-                                            className="input input-bordered w-full pl-10 bg-base-100/50 border-base-content/20 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all rounded-xl"
-                                            value={email}
-                                            onChange={(e) => setEmail(e.target.value)}
-                                            required
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="form-control">
-                                    <label className="label pb-1">
-                                        <span className="label-text font-medium text-base-content/80">Password</span>
-                                    </label>
-                                    <div className="relative w-full">
-                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                            <Lock className="h-5 w-5 text-base-content/40" />
-                                        </div>
-                                        <input
-                                            type="password"
-                                            placeholder="••••••••"
-                                            className="input input-bordered w-full pl-10 bg-base-100/50 border-base-content/20 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all rounded-xl"
-                                            value={password}
-                                            onChange={(e) => setPassword(e.target.value)}
-                                            required
-                                        />
-                                    </div>
-                                    <label className="label">
-                                        <a href="#" className="label-text-alt link link-hover text-primary font-medium">Forgot password?</a>
-                                    </label>
-                                </div>
-
-                                <button
-                                    className="btn btn-primary w-full mt-2 bg-gradient-to-r from-violet-600 to-fuchsia-600 border-none text-white shadow-lg shadow-primary/20 hover:shadow-primary/30 hover:-translate-y-0.5 transition-all rounded-xl h-12 text-base"
-                                    type="submit"
-                                    disabled={loading}
-                                >
-                                    {loading ? <span className="loading loading-spinner"></span> : 'Log In'}
-                                </button>
-                            </form>
-
-                            <div className="divider text-base-content/40 text-xs my-6">OR</div>
-
-                            <div className="space-y-3">
-                                <button className="btn btn-outline w-full gap-2 border-base-content/20 hover:bg-base-100 hover:border-base-content/30 text-base-content/80 font-medium rounded-xl h-11 normal-case">
-                                    <Command className="w-5 h-5" />
-                                    Continue with Google
-                                </button>
-                                <button className="btn btn-outline w-full gap-2 border-base-content/20 hover:bg-base-100 hover:border-base-content/30 text-base-content/80 font-medium rounded-xl h-11 normal-case">
-                                    <Github className="w-5 h-5" />
-                                    Continue with GitHub
-                                </button>
-                            </div>
-
-                            <div className="text-center mt-8 text-sm text-base-content/60">
-                                Don't have an account?{' '}
-                                <Link href="/register" className="link link-primary font-bold text-primary no-underline hover:underline">
-                                    Sign up
-                                </Link>
-                            </div>
+        <div className="min-h-screen flex items-center justify-center p-4 bg-[#F4F6F9] font-inter">
+            <main className="bg-white rounded-[24px] px-8 py-12 shadow-[0_4px_20px_rgba(0,0,0,0.05)] w-full max-w-[380px] flex flex-col items-center">
+                <header className="w-full flex flex-col items-center">
+                    <div className="flex flex-col items-center justify-center gap-3 mb-6">
+                        <div className="relative flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-[#103B6D] to-[#3B82F6] shadow-lg shadow-blue-100/50 ring-1 ring-black/5">
+                            <svg className="w-9 h-9 text-[#C5A059] drop-shadow-sm" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path clipRule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zm13.36-1.814a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z" fillRule="evenodd"></path>
+                            </svg>
+                        </div>
+                        <div className="flex flex-col items-center">
+                            <h2 className="text-2xl font-bold tracking-tight text-[#103B6D]">Wish<span className="text-[#C5A059]">Pay</span></h2>
                         </div>
                     </div>
-                </div>
-            </div>
+                    <h1 className="font-bold text-slate-900 mb-2 text-center text-[28px]">
+                        Welcome back
+                    </h1>
+                    <p className="text-sm text-gray-500 text-center font-medium mb-8">
+                        Sign in to your account
+                    </p>
+                </header>
+
+                <form className="w-full flex flex-col gap-4" onSubmit={handleLogin}>
+                    <div className="relative w-full">
+                        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+                            <Mail className="w-5 h-5" />
+                        </div>
+                        <input
+                            aria-label="Email Address"
+                            className="w-full bg-[#F0F2F5] text-slate-900 placeholder-gray-400 text-sm border-none py-3.5 pl-11 pr-4 focus:ring-2 focus:ring-[#103B6D]/20 rounded-[12px] h-[56px]"
+                            placeholder="Email"
+                            type="email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            required
+                        />
+                    </div>
+
+                    <div className="relative w-full">
+                        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+                            <Lock className="w-5 h-5" />
+                        </div>
+                        <input
+                            aria-label="Password"
+                            className="w-full bg-[#F0F2F5] text-slate-900 placeholder-gray-400 text-sm border-none py-3.5 pl-11 pr-11 focus:ring-2 focus:ring-[#103B6D]/20 rounded-[12px] h-[56px]"
+                            placeholder="Password"
+                            type={showPassword ? "text" : "password"}
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            required
+                        />
+                        <button
+                            type="button"
+                            className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
+                            onClick={() => setShowPassword(!showPassword)}
+                        >
+                            {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                        </button>
+                    </div>
+
+                    {error && (
+                        <div className="text-red-500 text-sm text-center font-medium">
+                            {error}
+                        </div>
+                    )}
+
+                    <div className="w-full flex justify-end mt-1">
+                        <a className="text-sm font-medium hover:underline text-blue-900" href="#">
+                            Forgot Password?
+                        </a>
+                    </div>
+
+                    <button
+                        className="w-full bg-[#103B6D] hover:bg-[#0A2A4F] text-white font-semibold py-3.5 rounded-full shadow-[0_4px_14px_0_rgba(30,64,121,0.39)] mt-4 transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed flex justify-center items-center"
+                        type="submit"
+                        disabled={loading}
+                    >
+                        {loading ? <span className="loading loading-spinner loading-sm"></span> : 'Log In'}
+                    </button>
+                </form>
+
+                <footer className="mt-8 text-center">
+                    <p className="text-sm text-gray-500 font-medium">
+                        Don't have an account?{' '}
+                        <Link className="text-slate-900 hover:underline text-blue-900 font-bold" href="/register">Sign Up.</Link>
+                    </p>
+                </footer>
+            </main>
         </div>
     );
 }

@@ -1,5 +1,8 @@
+'use client';
+
 import { useState, useEffect } from 'react';
-import { ItemType, Priority } from '../types';
+import { Item, ItemType, Priority } from '../types';
+import { X, Check, Tag, DollarSign, Bookmark } from 'lucide-react';
 
 interface ItemModalProps {
     isOpen: boolean;
@@ -8,8 +11,6 @@ interface ItemModalProps {
     activeTab: ItemType;
     itemToEdit?: Item | null;
 }
-
-import { Item } from '../types';
 
 export const ItemModal = ({ isOpen, onClose, onSave, activeTab, itemToEdit }: ItemModalProps) => {
     const [formData, setFormData] = useState({
@@ -44,92 +45,107 @@ export const ItemModal = ({ isOpen, onClose, onSave, activeTab, itemToEdit }: It
         onSave({
             ...formData,
             type: activeTab,
-            id: itemToEdit?.id // Pass ID if editing
+            id: itemToEdit?.id
         });
     };
 
     if (!isOpen) return null;
 
     return (
-        <div className="modal modal-open modal-bottom sm:modal-middle">
-            <div className="modal-box">
-                <h3 className="font-bold text-lg mb-4">
-                    {itemToEdit ? 'Edit Item' : `Add New ${activeTab === 'need' ? 'Necessity' : 'Wish'}`}
-                </h3>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    <div className="form-control w-full">
-                        <label className="label">
-                            <span className="label-text">What is it?</span>
-                        </label>
-                        <input 
-                            type="text" 
-                            placeholder="e.g. Rent, iPhone 15" 
-                            className="input input-bordered w-full" 
-                            value={formData.name}
-                            onChange={e => setFormData({...formData, name: e.target.value})}
-                            required
-                        />
-                    </div>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden transform transition-all scale-100">
+                <div className="p-6 bg-gradient-to-br from-blue-600 to-blue-700 text-white text-center relative">
+                    <button onClick={onClose} className="absolute top-4 right-4 p-1 hover:bg-white/20 rounded-full transition-colors">
+                        <X className="w-5 h-5" />
+                    </button>
+                    <h3 className="text-xl font-bold">
+                        {itemToEdit ? 'Edit Goal' : `Add New ${activeTab === 'need' ? 'Necessity' : 'Wish'}`}
+                    </h3>
+                    <p className="text-blue-100 text-sm mt-1">
+                        {itemToEdit ? 'Update your goal details' : 'What are you saving for?'}
+                    </p>
+                </div>
 
-                    <div className="flex gap-4">
-                        <div className="form-control w-1/2">
-                            <label className="label">
-                                <span className="label-text">Total Price (₱)</span>
-                            </label>
+                <form onSubmit={handleSubmit} className="p-6 space-y-5">
+                    <div className="space-y-1">
+                        <label className="text-sm font-medium text-gray-700 ml-1">Item Name</label>
+                        <div className="relative">
+                            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
+                                <Tag className="w-5 h-5" />
+                            </div>
                             <input 
-                                type="number" 
-                                placeholder="0.00" 
-                                className="input input-bordered w-full" 
-                                value={formData.price}
-                                onChange={e => setFormData({...formData, price: e.target.value})}
+                                type="text" 
+                                placeholder="e.g. Rent, New Phone" 
+                                className="w-full pl-11 pr-4 py-3.5 bg-gray-50 border-2 border-gray-100 rounded-xl text-gray-800 focus:outline-none focus:border-blue-500 focus:ring-0 transition-all placeholder:text-gray-400" 
+                                value={formData.name}
+                                onChange={e => setFormData({...formData, name: e.target.value})}
                                 required
                             />
                         </div>
-                        {/* Only show Saved input when adding new item, or make it readonly/separate action for clarity? 
-                            For now, let's keep it editable but maybe we should rely on the main UI for updates. 
-                            Actually, editing price might affect saved ratio, so let's allow editing 'saved' here too carefully or just disable it.
-                            Let's keep it consistent with Add: allow editing.
-                        */}
-                        <div className="form-control w-1/2">
-                            <label className="label">
-                                <span className="label-text">Saved Already (₱)</span>
-                            </label>
-                            <input 
-                                type="number" 
-                                placeholder="0.00" 
-                                className="input input-bordered w-full" 
-                                value={formData.saved}
-                                onChange={e => setFormData({...formData, saved: e.target.value})}
-                                // If editing, maybe we shouldn't easily change saved amount here to avoid conflict with wallet? 
-                                // Let's allow it but handle logic in parent.
-                            />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-1">
+                            <label className="text-sm font-medium text-gray-700 ml-1">Total Price</label>
+                            <div className="relative">
+                                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
+                                    <span className="font-bold text-lg">₱</span>
+                                </div>
+                                <input 
+                                    type="number" 
+                                    placeholder="0.00" 
+                                    className="w-full pl-10 pr-4 py-3.5 bg-gray-50 border-2 border-gray-100 rounded-xl text-gray-800 focus:outline-none focus:border-blue-500 focus:ring-0 transition-all placeholder:text-gray-400" 
+                                    value={formData.price}
+                                    onChange={e => setFormData({...formData, price: e.target.value})}
+                                    required
+                                />
+                            </div>
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-sm font-medium text-gray-700 ml-1">Initial Savings</label>
+                            <div className="relative">
+                                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
+                                    <span className="font-bold text-lg">₱</span>
+                                </div>
+                                <input 
+                                    type="number" 
+                                    placeholder="0.00" 
+                                    className="w-full pl-10 pr-4 py-3.5 bg-gray-50 border-2 border-gray-100 rounded-xl text-gray-800 focus:outline-none focus:border-blue-500 focus:ring-0 transition-all placeholder:text-gray-400" 
+                                    value={formData.saved}
+                                    onChange={e => setFormData({...formData, saved: e.target.value})}
+                                />
+                            </div>
                         </div>
                     </div>
 
                     {activeTab === 'need' && (
-                        <div className="form-control">
-                            <label className="label">
-                                <span className="label-text">Priority</span>
-                            </label>
-                            <select 
-                                className="select select-bordered"
-                                value={formData.priority}
-                                onChange={e => setFormData({...formData, priority: e.target.value as Priority})}
-                            >
-                                <option value="high">🔥 High Priority</option>
-                                <option value="medium">⚡ Medium Priority</option>
-                                <option value="low">🌱 Low Priority</option>
-                            </select>
+                        <div className="space-y-1">
+                            <label className="text-sm font-medium text-gray-700 ml-1">Priority Level</label>
+                            <div className="relative">
+                                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
+                                    <Bookmark className="w-5 h-5" />
+                                </div>
+                                <select 
+                                    className="w-full pl-11 pr-4 py-3.5 bg-gray-50 border-2 border-gray-100 rounded-xl text-gray-800 focus:outline-none focus:border-blue-500 focus:ring-0 transition-all appearance-none"
+                                    value={formData.priority}
+                                    onChange={e => setFormData({...formData, priority: e.target.value as Priority})}
+                                >
+                                    <option value="high">🔥 High Priority</option>
+                                    <option value="medium">⚡ Medium Priority</option>
+                                    <option value="low">🌱 Low Priority</option>
+                                </select>
+                            </div>
                         </div>
                     )}
                     
-                    <div className="modal-action">
-                        <button type="button" className="btn" onClick={onClose}>Cancel</button>
-                        <button type="submit" className="btn btn-primary">{itemToEdit ? 'Save Changes' : 'Add Item'}</button>
-                    </div>
+                    <button 
+                        type="submit" 
+                        className="w-full py-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-lg shadow-lg shadow-blue-500/30 transition-all flex items-center justify-center gap-2 mt-2"
+                    >
+                        {itemToEdit ? 'Save Changes' : 'Create Goal'} <Check className="w-5 h-5" />
+                    </button>
                 </form>
             </div>
-            <div className="modal-backdrop" onClick={onClose}></div>
         </div>
     );
 };

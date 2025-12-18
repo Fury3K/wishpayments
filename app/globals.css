@@ -1,5 +1,13 @@
 @import "tailwindcss";
 
+@theme {
+    --color-wish-blue: #103B6D;
+    --color-wish-blue-dark: #0A2A4F;
+    --color-wish-gold: #C5A059;
+    --color-wish-gold-light: #E5C578;
+    --color-wish-text: #333333;
+}
+
 @plugin "daisyui" {
     themes: cupcake --default, dim;
 }
@@ -20,4 +28,98 @@
 
 ::-webkit-scrollbar-thumb:hover {
     background: #94a3b8;
+}
+
+/* Hide scrollbar for horizontal scrolling areas */
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+.no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+/* Landing Page Custom Styles */
+.hero-split-bg {
+    background: linear-gradient(115deg, #C5A059 0%, #C5A059 49%, #FFFFFF 50%, #103B6D 51%, #103B6D 100%);
+    position: relative;
+    overflow: hidden;
+}
+
+.glass-circle {
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.5);
+    position: relative;
+}
+
+.glass-circle::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 4px;
+    height: 80px;
+    background: linear-gradient(to bottom, rgba(255,255,255,0.8), transparent);
+    filter: blur(2px);
+    z-index: 10;
+}
+
+.glass-icon {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+/* Item Details Chart Styles */
+.chart-container {
+    position: relative;
+    width: 260px;
+    height: 260px;
+    border-radius: 50%;
+    background: conic-gradient(#0284c7 0% 75%, #f1f5f9 75% 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.chart-inner {
+    background-color: white;
+    width: 85%;
+    height: 85%;
+    border-radius: 50%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+}
+
+.chart-cap-start {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 15%;
+    height: 15%;
+    background-color: #0284c7;
+    border-radius: 50%;
+    z-index: 5;
+}
+
+.chart-cap-end {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    transform: translateY(-50%);
+    width: 15%;
+    height: 15%;
+    background-color: #0284c7;
+    border-radius: 50%;
+    z-index: 5;
 }

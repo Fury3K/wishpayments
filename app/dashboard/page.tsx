@@ -1,625 +1,359 @@
 'use client';
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
-import { Plus, Zap, Heart } from 'lucide-react';
-import { Navbar } from '../components/Navbar';
-import { SummaryCard } from '../components/SummaryCard';
-import { WalletCard } from '../components/WalletCard';
-import { ItemCard } from '../components/ItemCard';
-import { ItemModal } from '../components/AddItemModal';
-import { CashOutModal } from '../components/modals/CashOutModal';
-import { CashInModal } from '../components/modals/CashInModal';
-import { ConfirmationModal } from '../components/modals/ConfirmationModal';
-import { DeleteConfirmationModal } from '../components/modals/DeleteConfirmationModal';
-import { CompleteConfirmationModal } from '../components/modals/CompleteConfirmationModal';
-import { AlertModal } from '../components/modals/AlertModal';
-import { Item, ItemType } from '../types';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import api from '@/lib/api'; // Custom axios instance
+import { Settings, UserCircle, Plus } from 'lucide-react';
+import api from '@/lib/api';
 import { toast } from 'react-hot-toast';
+import { Item } from '../types';
+import { BottomNav } from '../components/BottomNav';
+import { CashInModal } from '../components/modals/CashInModal';
+import { CashOutModal } from '../components/modals/CashOutModal';
+import { AddBankModal } from '../components/modals/AddBankModal';
+import { EditBankModal } from '../components/modals/EditBankModal';
+import { BankCard } from '../components/BankCard';
+
+interface BankAccount {
+    id: number;
+    name: string;
+    balance: number;
+    color: string;
+}
 
 export default function Dashboard() {
     const router = useRouter();
-    const [activeTab, setActiveTab] = useState<ItemType>('need');
     const [items, setItems] = useState<Item[]>([]);
-    const [balance, setBalance] = useState(0);
-    const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc'); // desc = High to Low
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [itemToEdit, setItemToEdit] = useState<Item | null>(null);
+    const [walletBalance, setWalletBalance] = useState(0);
+    const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([]);
+    const [loading, setLoading] = useState(true);
+    
+    // Carousel State
+    const scrollContainerRef = useRef<HTMLDivElement>(null);
+    const [activeCardIndex, setActiveCardIndex] = useState(0);
+    
+    // Modals
     const [isCashInModalOpen, setIsCashInModalOpen] = useState(false);
     const [isCashOutModalOpen, setIsCashOutModalOpen] = useState(false);
-    const [loadingItems, setLoadingItems] = useState(true); // New state for loading items
+    const [isAddBankModalOpen, setIsAddBankModalOpen] = useState(false);
+    const [isEditBankModalOpen, setIsEditBankModalOpen] = useState(false);
+    
+    // State to track active operations
+    const [activeAccountId, setActiveAccountId] = useState<string | number>('wallet');
+    const [bankToEdit, setBankToEdit] = useState<BankAccount | null>(null);
 
-    const handleLogout = () => {
-        localStorage.removeItem('token'); // Assuming JWT token is stored here
-        localStorage.removeItem('wishpay_items'); // Clear local storage items (no longer needed after backend)
-        localStorage.removeItem('wishpay_balance'); // Clear local storage balance (no longer needed after backend)
-        router.push('/');
-    };
-
-    // Confirmation Modal State
-    const [confirmModal, setConfirmModal] = useState({
-        isOpen: false,
-        title: '',
-        message: '',
-        onConfirm: () => { },
-    });
-
-    // Delete Confirmation Modal State
-    const [deleteModal, setDeleteModal] = useState({
-        isOpen: false,
-        item: null as Item | null,
-    });
-
-    // Complete Confirmation Modal State
-    const [completeModal, setCompleteModal] = useState({
-        isOpen: false,
-        item: null as Item | null,
-    });
-
-    // Alert Modal State
-    const [alertModal, setAlertModal] = useState({
-        isOpen: false,
-        message: '',
-    });
-
-    const showAlert = (message: string) => {
-        setAlertModal({ isOpen: true, message });
-    };
-
-    // --- Fetch items from API on mount ---
-    const fetchItems = useCallback(async () => {
-        setLoadingItems(true);
+    const fetchData = useCallback(async () => {
+        setLoading(true);
         try {
-            const itemsResponse = await api.get('/api/items');
-            setItems(itemsResponse.data);
-
-            const userBalanceResponse = await api.get('/api/user/balance');
-            setBalance(userBalanceResponse.data.balance || 0);
-
+            const [itemsRes, balanceRes, banksRes] = await Promise.all([
+                api.get('/api/items'),
+                api.get('/api/user/balance'),
+                api.get('/api/banks')
+            ]);
+            
+            setItems(itemsRes.data);
+            setWalletBalance(balanceRes.data.balance || 0);
+            setBankAccounts(banksRes.data);
         } catch (error: any) {
             if (error.response && error.response.status === 401) {
-                router.push('/login'); // Redirect to login if unauthorized
+                router.push('/login');
             } else {
-                toast.error(error.response?.data?.message || 'Failed to fetch items or balance.');
-                console.error('Failed to fetch items or balance:', error);
+                toast.error(error.response?.data?.message || 'Failed to fetch data.');
             }
         } finally {
-            setLoadingItems(false);
+            setLoading(false);
         }
     }, [router]);
 
     useEffect(() => {
-        fetchItems();
-    }, [fetchItems]);
-    // --- End Fetch items ---
+        fetchData();
+    }, [fetchData]);
 
-    // Removed localStorage useEffects
+    const handleScroll = () => {
+        if (scrollContainerRef.current) {
+            const { scrollLeft, clientWidth } = scrollContainerRef.current;
+            // Calculate active index based on scroll position and container width
+            // Adding a small buffer (clientWidth / 2) to switch active state when card is halfway through
+            const index = Math.round(scrollLeft / clientWidth);
+            setActiveCardIndex(index);
+        }
+    };
 
-    const stats = useMemo(() => {
-        const currentList = items.filter(i => i.type === activeTab);
-        const totalCost = currentList.reduce((acc, curr) => acc + (curr.price || 0), 0);
-        const totalSaved = currentList.reduce((acc, curr) => acc + (curr.saved || 0), 0);
-        const progress = totalCost > 0 ? (totalSaved / totalCost) * 100 : 0;
-        const count = currentList.length;
-        return { totalCost, totalSaved, progress, count };
-    }, [items, activeTab]);
+    const essentialsProgress = useMemo(() => {
+        const needs = items.filter(i => i.type === 'need');
+        const totalCost = needs.reduce((acc, curr) => acc + (curr.price || 0), 0);
+        const totalSaved = needs.reduce((acc, curr) => acc + (curr.saved || 0), 0);
+        const percentage = totalCost > 0 ? (totalSaved / totalCost) * 100 : 0;
+        return { totalCost, totalSaved, percentage };
+    }, [items]);
+
+    const handleAddBank = async (bankData: any) => {
+        try {
+            const response = await api.post('/api/banks', bankData);
+            setBankAccounts([...bankAccounts, response.data]);
+            toast.success('Bank account added!');
+            setIsAddBankModalOpen(false);
+        } catch (error: any) {
+            toast.error(error.response?.data?.message || 'Failed to add bank.');
+        }
+    };
+
+    const handleUpdateBank = async (id: number, bankData: any) => {
+        try {
+            const response = await api.put(`/api/banks/${id}`, bankData);
+            setBankAccounts(prev => prev.map(b => b.id === id ? response.data : b));
+            toast.success('Bank account updated!');
+            setIsEditBankModalOpen(false);
+            setBankToEdit(null);
+        } catch (error: any) {
+            toast.error(error.response?.data?.message || 'Failed to update bank.');
+        }
+    };
+
+    const handleDeleteBank = async (id: number) => {
+        try {
+            await api.delete(`/api/banks/${id}`);
+            setBankAccounts(prev => prev.filter(b => b.id !== id));
+            toast.success('Bank account removed!');
+            setIsEditBankModalOpen(false);
+            setBankToEdit(null);
+            // Reset to first card if deleted
+            if (activeCardIndex >= bankAccounts.length) { // bankAccounts.length because we just removed one, so length-1 is max index
+                 setActiveCardIndex(Math.max(0, activeCardIndex - 1));
+            }
+        } catch (error: any) {
+            toast.error(error.response?.data?.message || 'Failed to delete bank.');
+        }
+    };
 
     const handleCashIn = async (amount: number) => {
-        try {
-            const newBalance = balance + amount;
-            const response = await api.put('/api/user/balance', { balance: newBalance });
-            setBalance(response.data.balance);
-            toast.success(`Cashed in ₱${amount.toLocaleString()} successfully!`);
-        } catch (error: any) {
-            console.error('Error cashing in:', error);
-            toast.error(error.response?.data?.message || 'Failed to cash in.');
+        if (activeAccountId === 'wallet') {
+            try {
+                const newBalance = walletBalance + amount;
+                await api.put('/api/user/balance', { balance: newBalance });
+                setWalletBalance(newBalance);
+                toast.success(`Cashed in ₱${amount.toLocaleString()} to Wallet!`);
+                setIsCashInModalOpen(false);
+            } catch (error: any) {
+                toast.error('Failed to update wallet.');
+            }
+        } else {
+             const bank = bankAccounts.find(b => b.id === activeAccountId);
+             if (bank) {
+                 try {
+                     const newBalance = bank.balance + amount;
+                     await api.put(`/api/banks/${bank.id}`, { ...bank, balance: newBalance });
+                     setBankAccounts(prev => prev.map(b => b.id === activeAccountId ? { ...b, balance: newBalance } : b));
+                     toast.success(`Cashed in ₱${amount.toLocaleString()}!`);
+                     setIsCashInModalOpen(false);
+                 } catch (error: any) {
+                     toast.error('Failed to update bank balance.');
+                 }
+             }
         }
     };
 
     const handleCashOut = async (amount: number) => {
-        try {
-            const newBalance = balance - amount;
-            if (newBalance < 0) {
-                toast.error('Insufficient balance');
-                return;
-            }
-            const response = await api.put('/api/user/balance', { balance: newBalance });
-            setBalance(response.data.balance);
-            toast.success(`Removed ₱${amount.toLocaleString()} successfully!`);
-        } catch (error: any) {
-            console.error('Error removing funds:', error);
-            toast.error(error.response?.data?.message || 'Failed to remove funds.');
-        }
-    };
-
-    const handleSaveItem = async (itemData: any) => {
-        const price = parseFloat(itemData.price);
-        let savedAmount = parseFloat(itemData.saved || '0');
-
-        if (savedAmount > price) {
-            savedAmount = price;
-        }
-
-        if (itemData.id) {
-            // Edit Mode
-            const existingItem = items.find(i => i.id === itemData.id);
-            if (!existingItem) {
-                toast.error('Item to edit not found.');
-                return;
-            }
-
-            const savedDiff = savedAmount - existingItem.saved;
-
+        if (activeAccountId === 'wallet') {
             try {
-                // Update item via API
-                const updatedItemData = {
-                    name: itemData.name,
-                    price: price,
-                    saved: savedAmount,
-                    type: itemData.type,
-                    priority: itemData.priority,
-                };
-                const itemResponse = await api.put(`/api/items/${itemData.id}`, updatedItemData);
-                const updatedItem: Item = itemResponse.data;
-
-                // Update local items state
-                setItems(prev => prev.map(i => i.id === updatedItem.id ? updatedItem : i));
-
-                // Adjust balance via API if saved amount changed
-                if (savedDiff !== 0) {
-                    const newBalance = balance - savedDiff;
-                    if (savedDiff > 0 && newBalance < 0) { // Check if we have enough balance to increase saved
-                        showAlert("Not enough money in wallet to increase saved amount!");
-                        // Revert to original balance if this is a problem
-                        // Optionally, fetch user balance again or only allow positive savedDiff if balance permits
-                        return;
-                    }
-                    const updatedBalanceResponse = await api.put('/api/user/balance', { balance: newBalance });
-                    setBalance(updatedBalanceResponse.data.balance);
-                }
-                toast.success('Item updated successfully!');
-
-            } catch (error: any) {
-                console.error('Error updating item:', error);
-                toast.error(error.response?.data?.message || 'Failed to update item.');
-            }
-
-        } else {
-            // Add Mode
-            if (savedAmount > balance) {
-                showAlert("Not enough money in wallet for initial deposit!");
-                return;
-            }
-
-            try {
-                const newItemData = {
-                    name: itemData.name,
-                    price: price,
-                    saved: savedAmount,
-                    type: itemData.type,
-                    priority: itemData.priority,
-                };
-                const itemResponse = await api.post('/api/items', newItemData);
-                const createdItem: Item = itemResponse.data;
-
-                // Update local state with the newly created item
-                setItems(prev => [createdItem, ...prev]);
-
-                // Deduct saved amount from user's balance via API
-                if (savedAmount > 0) {
-                    const updatedBalanceResponse = await api.put('/api/user/balance', { balance: balance - savedAmount });
-                    setBalance(updatedBalanceResponse.data.balance);
-                }
-                toast.success('Item added successfully!');
-
-            } catch (error: any) {
-                console.error('Error adding item:', error);
-                toast.error(error.response?.data?.message || 'Failed to add item.');
-            }
-        }
-
-        setIsModalOpen(false);
-        setItemToEdit(null);
-    };
-
-    const handleEditItem = async (item: Item) => {
-        setItemToEdit(item);
-        setIsModalOpen(true);
-    };
-
-    const initiateDelete = async (id: number) => {
-        const itemToDelete = items.find(i => i.id === id);
-        if (!itemToDelete) return;
-        setDeleteModal({ isOpen: true, item: itemToDelete });
-    };
-
-    const initiateComplete = (item: Item) => {
-        setCompleteModal({ isOpen: true, item });
-    };
-
-    const handleConfirmComplete = async () => {
-        if (completeModal.item) {
-            try {
-                await api.delete(`/api/items/${completeModal.item.id}`);
-                setItems(prev => prev.filter(item => item.id !== completeModal.item?.id));
-                setCompleteModal({ isOpen: false, item: null });
-                toast.success(`${completeModal.item.name} bought and archived!`);
-            } catch (error: any) {
-                console.error('Error completing item:', error);
-                toast.error(error.response?.data?.message || 'Failed to complete item.');
-            }
-        }
-    };
-
-    const handleConfirmBought = async () => {
-        if (deleteModal.item) {
-            try {
-                await api.delete(`/api/items/${deleteModal.item.id}`);
-                setItems(prev => prev.filter(item => item.id !== deleteModal.item?.id));
-                setDeleteModal({ isOpen: false, item: null });
-                toast.success(`${deleteModal.item.name} marked as bought!`);
-            } catch (error: any) {
-                console.error('Error marking item as bought:', error);
-                toast.error(error.response?.data?.message || 'Failed to mark item as bought.');
-            }
-        }
-    };
-
-    const handleConfirmRemove = async () => {
-        if (!deleteModal.item) return;
-
-        const itemToDelete = deleteModal.item;
-
-        const performRemove = async () => {
-            try {
-                if (itemToDelete.saved > 0) {
-                    const updatedBalanceResponse = await api.put('/api/user/balance', { balance: balance + itemToDelete.saved });
-                    setBalance(updatedBalanceResponse.data.balance);
-                }
-                await api.delete(`/api/items/${itemToDelete.id}`);
-                setItems(prev => prev.filter(item => item.id !== itemToDelete.id));
-                setDeleteModal({ isOpen: false, item: null });
-                setConfirmModal(prev => ({ ...prev, isOpen: false }));
-                toast.success(`${itemToDelete.name} removed successfully!`);
-            } catch (error: any) {
-                console.error('Error removing item:', error);
-                toast.error(error.response?.data?.message || 'Failed to remove item.');
-            }
-        };
-
-        if (itemToDelete.saved > 0) {
-            // Close the first modal to show the second one clearly
-            setDeleteModal({ isOpen: false, item: null });
-
-            setConfirmModal({
-                isOpen: true,
-                title: 'Refund Confirmation',
-                message: `PHP ${itemToDelete.saved.toLocaleString()} will be sent back to your wallet, are you sure you want to remove this?`,
-                onConfirm: performRemove
-            });
-        } else {
-            performRemove();
-        }
-    };
-
-    const handleUpdateSaved = async (id: number, rawAmount: number) => {
-        const item = items.find(i => i.id === id);
-        if (!item) return;
-
-        // Cap at price
-        let newAmount = rawAmount;
-        if (newAmount > item.price) {
-            newAmount = item.price;
-        }
-
-        const currentSaved = item.saved;
-        const difference = newAmount - currentSaved;
-
-        const updateState = async () => {
-            try {
-                // 1. Update item's saved amount via API
-                const itemUpdateResponse = await api.put(`/api/items/${id}`, { ...item, saved: newAmount, price: item.price }); // Send full item data, price needed for validation
-                const updatedItem: Item = itemUpdateResponse.data;
-
-                // 2. Adjust user's balance via API if necessary
-                if (difference !== 0) {
-                    const newBalance = balance - difference;
-                    const balanceUpdateResponse = await api.put('/api/user/balance', { balance: newBalance });
-                    setBalance(balanceUpdateResponse.data.balance);
-                }
-
-                // 3. Update local items state
-                setItems(prev => prev.map(i => {
-                    if (i.id === id) {
-                        return updatedItem;
-                    }
-                    return i;
-                }));
-                setConfirmModal(prev => ({ ...prev, isOpen: false }));
-                toast.success('Item saved amount updated!');
-
-            } catch (error: any) {
-                console.error('Error updating saved amount:', error);
-                toast.error(error.response?.data?.message || 'Failed to update saved amount.');
-            }
-        };
-
-        if (difference > 0) {
-            // Adding money
-            if (difference > balance) {
-                showAlert("Not enough money in wallet!");
-                return;
-            }
-
-            // Check for High Priority Needs if adding to a Want
-            if (item.type === 'want') {
-                const hasUnfundedHighPriorityNeed = items.some(i =>
-                    i.type === 'need' &&
-                    i.priority === 'high' &&
-                    i.saved < i.price
-                );
-
-                if (hasUnfundedHighPriorityNeed) {
-                    setConfirmModal({
-                        isOpen: true,
-                        title: 'Priority Warning',
-                        message: "You have a High Priority Need that hasn't reached its funding yet. Are you sure you want to fund this Want first?",
-                        onConfirm: updateState
-                    });
+                const newBalance = walletBalance - amount;
+                if (newBalance < 0) {
+                    toast.error('Insufficient balance');
                     return;
                 }
-            }
-
-            updateState();
-        } else if (difference < 0) {
-            // Removing money (Refund)
-            setConfirmModal({
-                isOpen: true,
-                title: 'Refund Confirmation',
-                message: `You are taking money away from this goal. Php ${Math.abs(difference).toLocaleString()} will be sent back to your wallet. Are you sure?`,
-                onConfirm: updateState
-            });
-        }
-    };
-
-    const handleQuickAdd = async (id: number, amountToAdd: number) => {
-        const item = items.find(i => i.id === id);
-        if (!item) return;
-
-        if (amountToAdd > balance) {
-            showAlert("Not enough money in wallet!");
-            return;
-        }
-
-        // Calculate new saved amount, capped at price
-        let newSaved = item.saved + amountToAdd;
-        if (newSaved > item.price) {
-            newSaved = item.price;
-        }
-
-        const actualAdded = newSaved - item.saved;
-
-        if (actualAdded <= 0) {
-            showAlert("This item is already fully funded!");
-            return;
-        }
-
-        const performQuickAdd = async () => {
-            try {
-                // Update item's saved amount via API
-                const itemUpdateResponse = await api.put(`/api/items/${id}`, { ...item, saved: newSaved, price: item.price }); // Send full item data, price needed for validation
-                const updatedItem: Item = itemUpdateResponse.data;
-
-                // Adjust user's balance via API
-                const balanceUpdateResponse = await api.put('/api/user/balance', { balance: balance - actualAdded });
-                setBalance(balanceUpdateResponse.data.balance);
-
-                // Update local items state
-                setItems(prev => prev.map(i => {
-                    if (i.id === id) {
-                        return updatedItem;
-                    }
-                    return i;
-                }));
-                setConfirmModal(prev => ({ ...prev, isOpen: false })); // Close confirmation modal if it was open
-                toast.success(`₱${actualAdded.toLocaleString()} added to ${item.name}!`);
-
+                await api.put('/api/user/balance', { balance: newBalance });
+                setWalletBalance(newBalance);
+                toast.success(`Removed ₱${amount.toLocaleString()} from Wallet!`);
+                setIsCashOutModalOpen(false);
             } catch (error: any) {
-                console.error('Error quick adding amount:', error);
-                toast.error(error.response?.data?.message || 'Failed to quick add amount.');
+                 toast.error('Failed to update wallet.');
             }
-        };
-
-        // Check for High Priority Needs if quick-adding to a Want
-        if (item.type === 'want') {
-            const hasUnfundedHighPriorityNeed = items.some(i =>
-                i.type === 'need' &&
-                i.priority === 'high' &&
-                i.saved < i.price
-            );
-
-            if (hasUnfundedHighPriorityNeed) {
-                setConfirmModal({
-                    isOpen: true,
-                    title: 'Priority Warning',
-                    message: "You have a High Priority Need that hasn't reached its funding yet. Are you sure you want to fund this Want first?",
-                    onConfirm: performQuickAdd
-                });
-                return;
+        } else {
+            const bank = bankAccounts.find(b => b.id === activeAccountId);
+            if (bank) {
+                if (bank.balance < amount) {
+                    toast.error('Insufficient balance');
+                    return;
+                }
+                try {
+                     const newBalance = bank.balance - amount;
+                     await api.put(`/api/banks/${bank.id}`, { ...bank, balance: newBalance });
+                     setBankAccounts(prev => prev.map(b => b.id === activeAccountId ? { ...b, balance: newBalance } : b));
+                     toast.success(`Removed ₱${amount.toLocaleString()}!`);
+                     setIsCashOutModalOpen(false);
+                 } catch (error: any) {
+                     toast.error('Failed to update bank balance.');
+                 }
             }
         }
-
-        // If no warning needed or not a want item, proceed directly
-        performQuickAdd();
     };
 
-    if (loadingItems) {
-        return <div className="min-h-screen flex justify-center items-center bg-base-200"><span className="loading loading-spinner loading-lg"></span></div>;
+    const openCashIn = (id: string | number) => {
+        setActiveAccountId(id);
+        setIsCashInModalOpen(true);
+    };
+
+    const openCashOut = (id: string | number) => {
+        setActiveAccountId(id);
+        setIsCashOutModalOpen(true);
+    };
+    
+    const openEditBank = (bank: BankAccount) => {
+        setBankToEdit(bank);
+        setIsEditBankModalOpen(true);
+    };
+
+    const currentActiveBalance = activeAccountId === 'wallet' 
+        ? walletBalance 
+        : bankAccounts.find(b => b.id === activeAccountId)?.balance || 0;
+
+    if (loading) {
+        return <div className="min-h-screen flex justify-center items-center bg-[#F3F4F6]"><span className="loading loading-spinner loading-lg text-blue-600"></span></div>;
     }
 
     return (
-        <div className="min-h-screen pb-20 bg-base-200 relative">
-            {/* Background decoration */}
-            <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
-                <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/5 rounded-full blur-3xl -mr-20 -mt-20"></div>
-                <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-secondary/5 rounded-full blur-3xl -ml-20 -mb-20"></div>
-            </div>
-
-            <div className="relative z-10">
-                <Navbar onLogout={handleLogout} />
-
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                    {/* Wallet & Summary Grid */}
-                    <div className="grid md:grid-cols-2 gap-6 mb-8">
-                        <WalletCard
-                            balance={balance}
-                            onCashIn={() => setIsCashInModalOpen(true)}
-                            onCashOut={() => setIsCashOutModalOpen(true)}
-                        />
-
-                        <SummaryCard
-                            activeTab={activeTab}
-                            {...stats}
-                        />
-                    </div>
-
-                    {/* Tabs */}
-                    <div className="tabs tabs-boxed bg-base-100/50 backdrop-blur-sm p-1.5 shadow-sm mb-6 rounded-2xl border border-base-content/10">
-                        <a
-                            className={`tab tab-lg flex-1 gap-2 transition-all rounded-xl ${activeTab === 'need' ? 'tab-active !bg-violet-600 !text-white shadow-md' : 'hover:bg-base-100/50'}`}
-                            onClick={() => setActiveTab('need')}
-                        >
-                            <Zap className="w-4 h-4" /> Needs
-                        </a>
-                        <a
-                            className={`tab tab-lg flex-1 gap-2 transition-all rounded-xl ${activeTab === 'want' ? 'tab-active !bg-pink-500 !text-white shadow-md' : 'hover:bg-base-100/50'}`}
-                            onClick={() => setActiveTab('want')}
-                        >
-                            <Heart className="w-4 h-4" /> Wants
-                        </a>
-                    </div>
-
-                    {/* List Items */}
-                    <div className="space-y-4">
-                        {activeTab === 'need' && (
-                            <div className="flex justify-end px-2">
-                                <div className="dropdown dropdown-end">
-                                    <div tabIndex={0} role="button" className="btn btn-sm btn-ghost gap-2 normal-case text-base-content/60 hover:bg-base-100/50">
-                                        Sort by Priority: {sortOrder === 'desc' ? 'High to Low' : 'Low to High'}
-                                    </div>
-                                    <ul tabIndex={0} className="dropdown-content z-[1] menu p-2 shadow-lg bg-base-100 rounded-xl w-52 border border-base-200 mt-2">
-                                        <li><a onClick={() => setSortOrder('desc')} className={sortOrder === 'desc' ? 'active bg-primary/10 text-primary' : ''}>High to Low</a></li>
-                                        <li><a onClick={() => setSortOrder('asc')} className={sortOrder === 'asc' ? 'active bg-primary/10 text-primary' : ''}>Low to High</a></li>
-                                    </ul>
-                                </div>
-                            </div>
-                        )}
-
-                        {items.filter(i => i.type === activeTab).length === 0 ? (
-                            <div className="text-center py-20 opacity-50">
-                                <div className="bg-base-100/50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                                    <Plus className="w-8 h-8 text-base-content/40" />
-                                </div>
-                                <p className="text-lg font-medium text-base-content/60">No items in this list yet.</p>
-                                <p className="text-sm text-base-content/40">Tap + to add something!</p>
-                            </div>
-                        ) : (
-                            <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-                                {items
-                                    .filter(i => i.type === activeTab)
-                                    .sort((a, b) => {
-                                        if (activeTab === 'want') {
-                                            // For 'want' tab, sort by ID (newest first)
-                                            return b.id - a.id;
-                                        }
-                                        // For 'need' tab, apply priority sorting
-                                        const priorityWeight = { high: 3, medium: 2, low: 1 };
-                                        const diff = priorityWeight[b.priority] - priorityWeight[a.priority];
-                                        return sortOrder === 'desc' ? diff : -diff;
-                                    })
-                                    .map(item => (
-                                        <ItemCard
-                                            key={item.id}
-                                            item={item}
-                                            onDelete={initiateDelete}
-                                            onUpdateSaved={handleUpdateSaved}
-                                            onQuickAdd={handleQuickAdd}
-                                            onEdit={handleEditItem}
-                                            onComplete={initiateComplete}
-                                        />
-                                    ))
-                                }
-                            </div>
-                        )}
-                    </div>
-                </div>
-            </div>
-
-            {/* FAB */}
-            <div className="fixed bottom-8 right-8 z-50">
-                <button
-                    className="btn btn-circle btn-primary btn-lg shadow-xl shadow-violet-500/30 transform hover:scale-110 transition-all duration-300 border-none bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500"
-                    onClick={() => {
-                        setItemToEdit(null);
-                        setIsModalOpen(true);
-                    }}
-                >
-                    <Plus className="w-8 h-8 text-white" />
+        <div className="bg-[#F3F4F6] font-sans text-[#1A1B2D] antialiased min-h-screen pb-24 relative">
+            <header className="flex items-center justify-between px-6 py-6 sticky top-0 bg-[#F3F4F6] z-10">
+                <h1 className="text-xl font-bold text-[#1A1B2D]">WishPay Wallet</h1>
+                <button className="w-10 h-10 rounded-full border-gray-200 flex items-center justify-center">
+                    <UserCircle className="w-8 h-8 text-gray-400" />
                 </button>
-            </div>
+            </header>
 
-            <ItemModal
-                isOpen={isModalOpen}
-                onClose={() => {
-                    setIsModalOpen(false);
-                    setItemToEdit(null);
-                }}
-                onSave={handleSaveItem}
-                activeTab={activeTab}
-                itemToEdit={itemToEdit}
+            <main className="space-y-6 overflow-hidden">
+                {/* Swipeable Bank Cards Section */}
+                <section className="relative w-full">
+                    <div 
+                        ref={scrollContainerRef}
+                        onScroll={handleScroll}
+                        className="flex overflow-x-auto snap-x snap-mandatory px-6 pb-6 gap-4 no-scrollbar items-start"
+                    >
+                        {/* Main Wallet Card */}
+                        <div className="min-w-full snap-center shrink-0">
+                            <BankCard 
+                                name="WishPay Wallet"
+                                balance={walletBalance}
+                                color="blue"
+                                onCashIn={() => openCashIn('wallet')}
+                                onCashOut={() => openCashOut('wallet')}
+                            />
+                        </div>
+
+                        {/* Additional Bank Cards */}
+                        {bankAccounts.map((bank) => (
+                            <div key={bank.id} className="min-w-full snap-center shrink-0">
+                                <BankCard 
+                                    name={bank.name}
+                                    balance={bank.balance}
+                                    color={bank.color}
+                                    onCashIn={() => openCashIn(bank.id)}
+                                    onCashOut={() => openCashOut(bank.id)}
+                                    onEdit={() => openEditBank(bank)}
+                                />
+                            </div>
+                        ))}
+                    </div>
+                    
+                    {/* Pagination Dots */}
+                    <div className="flex justify-center gap-1.5 -mt-2 mb-4">
+                        <div className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${activeCardIndex === 0 ? 'bg-blue-600 w-4' : 'bg-gray-300'}`}></div>
+                        {bankAccounts.map((b, idx) => (
+                            <div 
+                                key={b.id} 
+                                className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${activeCardIndex === idx + 1 ? 'bg-blue-600 w-4' : 'bg-gray-300'}`}
+                            ></div>
+                        ))}
+                    </div>
+                </section>
+
+                <div className="px-6 space-y-6">
+                    {/* Essentials Funding Card */}
+                    <section className="bg-white rounded-3xl p-6 shadow-[0_10px_30px_-5px_rgba(0,0,0,0.03)]">
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="font-bold text-lg text-[#1A1B2D]">Essentials Funding</h3>
+                            <button className="text-gray-400 hover:text-gray-600">
+                                <Settings className="w-5 h-5" />
+                            </button>
+                        </div>
+                        <div className="w-full bg-gray-100 rounded-full overflow-hidden mb-3 h-3">
+                            <div 
+                                className="h-full bg-gradient-to-r from-[#22d3ee] to-[#0d9488] rounded-full transition-all duration-500" 
+                                style={{ width: `${Math.min(essentialsProgress.percentage, 100)}%` }}
+                            ></div>
+                        </div>
+                        <p className="text-xs text-[#8A94A6] font-medium tracking-wide">
+                            <span className="text-gray-600">{Math.round(essentialsProgress.percentage)}% Funded</span> - ₱{essentialsProgress.totalSaved.toLocaleString()} of ₱{essentialsProgress.totalCost.toLocaleString()} goal
+                        </p>
+                    </section>
+
+                    {/* Bank Accounts List */}
+                    <section className="bg-white rounded-3xl p-6 shadow-[0_10px_30px_-5px_rgba(0,0,0,0.03)]">
+                        <div className="flex items-center justify-between mb-5 mt-2">
+                             <h3 className="font-bold text-lg text-[#1A1B2D]">Bank Accounts</h3>
+                             <button 
+                                onClick={() => setIsAddBankModalOpen(true)}
+                                className="flex items-center gap-1 text-sm font-semibold text-blue-600 hover:text-blue-800 bg-blue-50 px-3 py-1.5 rounded-lg transition-colors"
+                             >
+                                <Plus className="w-4 h-4" /> Add Bank
+                            </button>
+                        </div>
+                        <ul className="space-y-6">
+                             {/* WishPay Wallet */}
+                            <li className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-3 h-3 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.6)]"></div>
+                                    <span className="text-base font-medium text-gray-700">WishPay Wallet</span>
+                                </div>
+                                <span className="text-base font-extrabold text-[#1A1B2D]">₱{walletBalance.toLocaleString()}</span>
+                            </li>
+                            {/* Dynamically Added Banks */}
+                            {bankAccounts.map((bank) => (
+                                <li key={bank.id} className="flex items-center justify-between cursor-pointer hover:bg-gray-50 p-2 -mx-2 rounded-lg transition-colors" onClick={() => openEditBank(bank)}>
+                                    <div className="flex items-center gap-3">
+                                        <div className={`w-3 h-3 rounded-full shadow-[0_0_8px_rgba(0,0,0,0.2)] 
+                                            ${bank.color === 'purple' ? 'bg-purple-600 shadow-purple-500/50' : 
+                                              bank.color === 'green' ? 'bg-emerald-500 shadow-emerald-500/50' : 
+                                              bank.color === 'orange' ? 'bg-orange-500 shadow-orange-500/50' :
+                                              bank.color === 'black' ? 'bg-gray-800 shadow-gray-500/50' :
+                                              'bg-blue-600 shadow-blue-500/50'}`}
+                                        ></div>
+                                        <span className="text-base font-medium text-gray-700">{bank.name}</span>
+                                    </div>
+                                    <span className="text-base font-extrabold text-[#1A1B2D]">₱{bank.balance.toLocaleString()}</span>
+                                </li>
+                            ))}
+                            {bankAccounts.length === 0 && (
+                                <li className="text-center text-gray-400 py-2 text-sm">No additional banks added yet.</li>
+                            )}
+                        </ul>
+                    </section>
+                </div>
+            </main>
+
+            <BottomNav />
+
+            {/* Modals */}
+            <CashInModal 
+                isOpen={isCashInModalOpen} 
+                onClose={() => setIsCashInModalOpen(false)} 
+                onConfirm={handleCashIn} 
             />
-
-            <CashInModal
-                isOpen={isCashInModalOpen}
-                onClose={() => setIsCashInModalOpen(false)}
-                onConfirm={handleCashIn}
-            />
-
-            <CashOutModal
-                isOpen={isCashOutModalOpen}
-                onClose={() => setIsCashOutModalOpen(false)}
+            <CashOutModal 
+                isOpen={isCashOutModalOpen} 
+                onClose={() => setIsCashOutModalOpen(false)} 
                 onConfirm={handleCashOut}
-                currentBalance={balance}
+                currentBalance={currentActiveBalance}
             />
-
-            <DeleteConfirmationModal
-                isOpen={deleteModal.isOpen}
-                itemName={deleteModal.item?.name || ''}
-                onBought={handleConfirmBought}
-                onRemove={handleConfirmRemove}
-                onCancel={() => setDeleteModal({ isOpen: false, item: null })}
+            <AddBankModal
+                isOpen={isAddBankModalOpen}
+                onClose={() => setIsAddBankModalOpen(false)}
+                onSave={handleAddBank}
             />
-
-            <CompleteConfirmationModal
-                isOpen={completeModal.isOpen}
-                itemName={completeModal.item?.name || ''}
-                onConfirm={handleConfirmComplete}
-                onCancel={() => setCompleteModal({ isOpen: false, item: null })}
-            />
-
-            <ConfirmationModal
-                isOpen={confirmModal.isOpen}
-                title={confirmModal.title}
-                message={confirmModal.message}
-                onConfirm={confirmModal.onConfirm}
-                onCancel={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
-            />
-
-            <AlertModal
-                isOpen={alertModal.isOpen}
-                message={alertModal.message}
-                onClose={() => setAlertModal({ ...alertModal, isOpen: false })}
+            <EditBankModal
+                isOpen={isEditBankModalOpen}
+                onClose={() => setIsEditBankModalOpen(false)}
+                onSave={handleUpdateBank}
+                onDelete={handleDeleteBank}
+                bankToEdit={bankToEdit}
             />
         </div>
     );

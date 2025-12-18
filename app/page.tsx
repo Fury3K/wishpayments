@@ -1,137 +1,119 @@
 'use client';
 
 import Link from 'next/link';
-import { ArrowRight, PiggyBank, CheckCircle, TrendingUp, Shield, Zap, Github } from 'lucide-react';
-import { Navbar } from './components/Navbar';
 
 export default function Home() {
     return (
-        <div className="min-h-screen bg-base-200 flex flex-col relative overflow-hidden">
-            {/* Background decoration */}
-            <div className="fixed inset-0 z-0 pointer-events-none">
-                <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-primary/10 rounded-full blur-3xl -mr-20 -mt-20 mix-blend-multiply dark:mix-blend-normal dark:opacity-20"></div>
-                <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-secondary/10 rounded-full blur-3xl -ml-20 -mb-20 mix-blend-multiply dark:mix-blend-normal dark:opacity-20"></div>
-                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-base-100/40 rounded-full blur-3xl"></div>
-            </div>
+        <div className="bg-gray-50 text-slate-800 antialiased font-poppins min-h-screen flex flex-col items-center">
+            <div className="w-full max-w-md bg-white shadow-2xl overflow-hidden min-h-screen relative flex flex-col">
+                <header className="flex justify-between items-center px-6 py-5 bg-white z-20 relative">
+                    <div className="flex items-center text-2xl font-bold tracking-tight">
+                        <span style={{ color: '#103B6D', fontWeight: 'bold' }}>Wish</span>
+                        <span style={{ color: '#C5A059', fontWeight: 'bold' }}>Pay</span>
+                    </div>
+                    <div className="w-8 h-8 flex items-center justify-center">
+                        <img 
+                            alt="Legal Scale" 
+                            className="object-contain opacity-80" 
+                            src="https://lh3.googleusercontent.com/aida-public/AB6AXuBV2ZN6UChZu_exSSlcn-brqAZaDMitiYLZl_66sTteWmXsjfqgaD29EilAu7736mhSpj_0HRQsRtwAyH65wN7bxLiFKWm2PIHT71olw1SSCP2rc5TIWa4nJnRx6DR_526oaJtm9qnB5ERVWIydNk65C4YyE6LiiP1WDaPxSACJZUqmHF3NRCOIxK33uKqzLYfRRdBECm-NoDNYry0QHYH4vmIvKDYdOUI_C_M17bGmPSjbs8mKFVoOr0ohT12sRu-IJPQO6ZZkjizo" 
+                            style={{ width: '24px' }} 
+                        />
+                    </div>
+                </header>
 
-            <div className="relative z-10 flex flex-col min-h-screen">
-                <Navbar showProfile={false} />
-
-                {/* Hero Section */}
-                <div className="flex-1 flex items-center justify-center px-4 py-20">
-                    <div className="max-w-4xl mx-auto text-center">
-                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-base-100/50 backdrop-blur-sm border border-base-content/10 text-sm font-medium text-primary mb-8 shadow-sm">
-                            <span className="relative flex h-2 w-2">
-                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-                                <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
-                            </span>
-                            Smart Financial Goal Tracking
+                <section className="hero-split-bg w-full h-[580px] relative text-white pb-20">
+                    <div className="absolute top-12 left-0 w-1/2 z-10 pl-[20px] pr-4">
+                        <div className="mb-3">
+                            <div className="glass-icon w-[60px] h-[60px] rounded-2xl flex items-center justify-center mb-2">
+                                <span className="material-symbols-outlined text-[32px] text-white drop-shadow-sm">shopping_bag</span>
+                            </div>
                         </div>
+                        <h2 className="text-[20px] font-bold mb-1 text-white drop-shadow-sm opacity-95">NEEDS:</h2>
+                        <p className="text-lg leading-tight font-medium mb-1 drop-shadow-sm">Secure your foundation.</p>
+                        <p className="text-sm font-light opacity-80">Essentials First.</p>
+                    </div>
 
-                        <h1 className="text-5xl md:text-7xl font-black mb-6 leading-tight tracking-tight text-base-content drop-shadow-sm">
-                            Master Your <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-600 to-fuchsia-600">Wishes</span> <br />
-                            & <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-500 to-blue-600">Needs</span>
+                    <div className="absolute top-[180px] right-0 w-1/2 z-10 pr-[20px] pl-4 flex flex-col items-end text-right">
+                        <div className="mb-3">
+                            <div className="glass-icon w-[60px] h-[60px] rounded-2xl flex items-center justify-center mb-2">
+                                <span className="material-symbols-outlined text-[32px] text-white drop-shadow-sm">flight</span>
+                            </div>
+                        </div>
+                        <h2 className="text-[20px] font-bold mb-1 text-white drop-shadow-sm opacity-95">WANTS:</h2>
+                        <p className="text-lg leading-tight font-medium mb-1 drop-shadow-sm">Plan for your dreams.</p>
+                        <p className="text-sm font-light opacity-80">Future Goals.</p>
+                    </div>
+
+                    <div className="absolute top-[38%] left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 flex flex-col items-center">
+                        <div className="glass-circle w-28 h-28 rounded-full flex items-center justify-center relative z-20">
+                            <img 
+                                alt="Balance Scale" 
+                                className="w-[50px] h-[50px] object-contain opacity-80" 
+                                src="https://lh3.googleusercontent.com/aida-public/AB6AXuBV2ZN6UChZu_exSSlcn-brqAZaDMitiYLZl_66sTteWmXsjfqgaD29EilAu7736mhSpj_0HRQsRtwAyH65wN7bxLiFKWm2PIHT71olw1SSCP2rc5TIWa4nJnRx6DR_526oaJtm9qnB5ERVWIydNk65C4YyE6LiiP1WDaPxSACJZUqmHF3NRCOIxK33uKqzLYfRRdBECm-NoDNYry0QHYH4vmIvKDYdOUI_C_M17bGmPSjbs8mKFVoOr0ohT12sRu-IJPQO6ZZkjizo" 
+                            />
+                        </div>
+                        <div className="w-2 h-2 bg-white rounded-full shadow-[0_0_10px_4px_rgba(255,255,255,0.8)] absolute top-[160px]"></div>
+                    </div>
+
+                    <div className="absolute bottom-24 left-0 w-full text-center px-4 z-10">
+                        <h1 className="text-[18px] font-medium text-white drop-shadow-md text-center mt-5">
+                            Achieve Financial Balance.<br />
+                            <span className="text-white/90 font-normal">Prioritize Smartly.</span>
                         </h1>
+                    </div>
+                </section>
 
-                        <p className="text-xl md:text-2xl text-base-content/80 max-w-2xl mx-auto mb-10 leading-relaxed">
-                            Stop dreaming and start saving. Prioritize your necessities, fund your wants, and watch your financial goals become reality.
-                        </p>
-
-                        <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-                            <Link href="/register" className="btn btn-lg btn-neutral border-none shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 px-8 rounded-2xl">
-                                Get Started Free <ArrowRight className="w-5 h-5" />
-                            </Link>
-                            <Link href="/login" className="btn btn-lg btn-ghost hover:bg-base-100/50 text-base-content/80 px-8 rounded-2xl">
-                                Log In
-                            </Link>
+                <div className="relative z-30 -mt-[40px] mx-4 mb-8">
+                    <div className="bg-white rounded-[20px] shadow-[0_-5px_20px_rgba(0,0,0,0.1)] p-6 flex justify-between items-start">
+                        <div className="flex flex-col items-center text-center w-1/3 px-1">
+                            <div className="w-[60px] h-[60px] bg-[#F5F5F5] rounded-full flex items-center justify-center mb-2">
+                                <img 
+                                    alt="Smart Saving" 
+                                    className="w-[30px] h-[30px] object-contain opacity-80" 
+                                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuBnqJy0ffnvIdPV5IWAO4HBH7EoOPC_1ndm4SouZpM7jh8IHsPQhFhFAubDcDiNrSlzMFZm36y7yKOAXi9YL42J5jqKypwHOG-TB1OxWNgRlxw5H_4Qz2mRbDLsemT7E1TroWdJyKYk4d88ux4_WttmM7pxReWhwZ3Givcp30JwyoD6Gsa5zS-o54WGX2vSCuffk1be6U6xn2BTwwzI40OoV_POQFJlWcTYa9kSCH-a1e84tyt7e-phw65EdnyRQWhSMUR3XB9uteAQ" 
+                                />
+                            </div>
+                            <span className="text-xs font-semibold text-gray-800 leading-tight">Smart<br />Saving</span>
                         </div>
-
-                        <div className="mt-12 text-sm font-medium text-base-content/60 flex items-center justify-center gap-6">
-                            <span className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-500" /> No credit card required</span>
-                            <span className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-500" /> Free forever plan</span>
+                        <div className="flex flex-col items-center text-center w-1/3 px-1">
+                            <div className="w-[60px] h-[60px] bg-[#F5F5F5] rounded-full flex items-center justify-center mb-2">
+                                <img 
+                                    alt="Goal Tracking" 
+                                    className="w-[30px] h-[30px] object-contain opacity-80" 
+                                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuBLRa8ar0XfWNxHD35RavfEDUkjGW8mTyvxL5t9ddcAI7l7HuD1TtgHQH06F3FHkhJF0wRRoQIV1-tuu7fgUPU5qGcxD1ScmSAc93A8mdqRFFbGujrKESI49LWy_nubEBpHuLfl7jAyYgmbvvTXjhaoBh150ZK8JFmSLWSMROR2BFQKZk3j0y2KFBcYtDG72O7Y64xNaD8YeiFAookHRPqCqqGVAWc8hL-VTJxRYjkJsDer6JIMiShbtkdY1u6tG3OaeR4yJ2nuz_A5" 
+                                />
+                            </div>
+                            <span className="text-xs font-semibold text-gray-800 leading-tight">Goal<br />Tracking</span>
+                        </div>
+                        <div className="flex flex-col items-center text-center w-1/3 px-1">
+                            <div className="w-[60px] h-[60px] bg-[#F5F5F5] rounded-full flex items-center justify-center mb-2">
+                                <img 
+                                    alt="Progress Insights" 
+                                    className="w-[30px] h-[30px] object-contain opacity-80" 
+                                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuC-ubInrOTRzo-TinL7RAJApiBPq8xuNLGRNFqme4ZqCyiPMwrIzB1x5Dr_X0RnDcki2IMxLNZT3NnoiBXphZ7BknqroiyRxOf32ZAb_PoDa7JfQ23vsrlIJb9hAuF331ODUPJkh90OLfASDwPwhEBi2OtMrGXSFlKrH7XRb0ZdP9gxqN8HJ065mGKySPqgDzFW8p0-NPwmthkR1oR4qWsmFVFRIPxkJPQQriuRWZxwM1W5gArtJGSu_nMtV_sKa1F4Wie37P7lCWBf" 
+                                />
+                            </div>
+                            <span className="text-xs font-semibold text-gray-800 leading-tight">Progress<br />Insights</span>
                         </div>
                     </div>
                 </div>
 
-                {/* Features Section */}
-                <div className="py-24 px-4">
-                    <div className="max-w-6xl mx-auto">
-                        <div className="text-center mb-16">
-                            <h2 className="text-3xl md:text-4xl font-bold mb-4 text-base-content">Simple, Powerful Features</h2>
-                            <p className="text-lg text-base-content/80 max-w-2xl mx-auto">Everything you need to manage your savings goals effectively, wrapped in a beautiful interface.</p>
-                        </div>
-
-                        <div className="grid md:grid-cols-3 gap-8">
-                            {/* Feature 1 */}
-                            <div className="group p-8 rounded-3xl bg-base-100/60 backdrop-blur-xl border border-base-content/10 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
-                                <div className="w-14 h-14 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
-                                    <Zap className="w-7 h-7" />
-                                </div>
-                                <h3 className="text-xl font-bold mb-3 text-base-content">Prioritize Needs</h3>
-                                <p className="text-base-content/80 leading-relaxed">Clearly distinguish between absolute necessities and fun wants. Always know what to fund next.</p>
-                            </div>
-
-                            {/* Feature 2 */}
-                            <div className="group p-8 rounded-3xl bg-base-100/60 backdrop-blur-xl border border-base-content/10 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
-                                <div className="w-14 h-14 rounded-2xl bg-secondary/10 text-secondary flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
-                                    <TrendingUp className="w-7 h-7" />
-                                </div>
-                                <h3 className="text-xl font-bold mb-3 text-base-content">Track Progress</h3>
-                                <p className="text-base-content/80 leading-relaxed">Visual progress bars and quick-add buttons help you stay motivated as you save bit by bit.</p>
-                            </div>
-
-                            {/* Feature 3 */}
-                            <div className="group p-8 rounded-3xl bg-base-100/60 backdrop-blur-xl border border-base-content/10 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
-                                <div className="w-14 h-14 rounded-2xl bg-accent/10 text-accent flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
-                                    <Shield className="w-7 h-7" />
-                                </div>
-                                <h3 className="text-xl font-bold mb-3 text-base-content">Wallet Control</h3>
-                                <p className="text-base-content/80 leading-relaxed">Manage your virtual wallet balance. Cash in, allocate funds, and get refunds if you change your mind.</p>
-                            </div>
-                        </div>
+                <footer className="mt-auto pb-8 px-6 flex flex-col items-center w-full">
+                    <div className="w-full flex gap-4 mb-6">
+                        <Link href="/register" className="flex-1 bg-[#103B6D] hover:bg-[#0A2A4F] text-white font-medium py-3.5 px-4 rounded-full shadow-lg transition duration-200 flex items-center justify-center group">
+                            Register Now
+                            <span className="ml-2 group-hover:translate-x-1 transition-transform">→</span>
+                        </Link>
+                        <Link href="/login" className="flex-1 bg-white border border-[#103B6D] text-[#103B6D] font-medium py-3.5 px-4 rounded-full hover:bg-gray-50 transition duration-200 text-center flex items-center justify-center">
+                            Login
+                        </Link>
                     </div>
-                </div>
-
-                {/* Social Proof / Trust */}
-                <div className="py-20 px-4">
-                    <div className="max-w-5xl mx-auto">
-                        <div className="rounded-3xl bg-neutral p-12 text-center text-neutral-content shadow-2xl relative overflow-hidden">
-                            <div className="absolute top-0 right-0 w-64 h-64 bg-base-100/5 rounded-full blur-3xl -mr-16 -mt-16"></div>
-                            <div className="absolute bottom-0 left-0 w-64 h-64 bg-base-100/5 rounded-full blur-3xl -ml-16 -mb-16"></div>
-
-                            <h2 className="text-3xl font-bold mb-12 relative z-10">Trusted by Smart Savers</h2>
-
-                            <div className="grid md:grid-cols-3 gap-8 relative z-10">
-                                <div className="flex flex-col items-center">
-                                    <div className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-fuchsia-400 mb-2">₱1.2M+</div>
-                                    <div className="text-neutral-content/70 font-medium">Money Saved</div>
-                                </div>
-                                <div className="flex flex-col items-center">
-                                    <div className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-400 mb-2">4,500+</div>
-                                    <div className="text-neutral-content/70 font-medium">Active Goals</div>
-                                </div>
-                                <div className="flex flex-col items-center">
-                                    <div className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-400 mb-2">1,200+</div>
-                                    <div className="text-neutral-content/70 font-medium">Happy Users</div>
-                                </div>
-                            </div>
-                        </div>
+                    <a className="text-sm text-gray-600 underline decoration-gray-400 hover:text-[#103B6D] mb-8" href="#">
+                        Learn More About Our Features
+                    </a>
+                    <div className="text-[10px] text-gray-400">
+                        © {new Date().getFullYear()} WishPay. All rights reserved.
                     </div>
-                </div>
-
-                {/* Footer */}
-                <footer className="py-10 text-center text-base-content/60 text-sm">
-                    <div className="flex justify-center gap-6 mb-6">
-                        <a href="#" className="hover:text-base-content transition-colors">About us</a>
-                        <a href="#" className="hover:text-base-content transition-colors">Contact</a>
-                        <a href="#" className="hover:text-base-content transition-colors">Privacy Policy</a>
-                    </div>
-                    <div className="flex justify-center gap-4 mb-6">
-                        <a href="#" className="p-2 rounded-full bg-base-100/50 hover:bg-base-100 hover:shadow-md transition-all text-base-content/80">
-                            <Github className="w-5 h-5" />
-                        </a>
-                    </div>
-                    <p>Copyright © {new Date().getFullYear()} - WishPayments</p>
                 </footer>
             </div>
         </div>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { PiggyBank, Sun, Moon, User, LogOut, Settings, History } from 'lucide-react';
+import { Sun, Moon, User, LogOut, Settings, History } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useTheme } from 'next-themes';
@@ -21,74 +21,71 @@ export const Navbar = ({ showProfile = true, onLogout }: { showProfile?: boolean
     };
 
     const handleLogout = () => {
+        localStorage.removeItem('token');
         router.push('/');
     };
 
-    // Prevent hydration mismatch
     if (!mounted) {
-        // Render a simplified version or empty div to avoid layout shift, 
-        // or just return null if acceptable. 
-        // Returning a skeleton or non-interactive version is better.
         return (
-             <div className="navbar bg-base-100/70 backdrop-blur-xl shadow-lg sticky top-4 z-50 rounded-2xl mx-4 sm:mx-auto max-w-7xl mt-4 border border-base-content/10">
-                <div className="flex-1">
-                     <a className="btn btn-ghost normal-case text-xl text-primary gap-2">
-                        <PiggyBank className="w-5 h-5" /> WishPay
-                    </a>
+            <header className="flex justify-between items-center px-6 py-5 bg-white z-20 relative">
+                <div className="flex items-center text-2xl font-bold tracking-tight">
+                    <span style={{ color: '#103B6D', fontWeight: 'bold' }}>Wish</span>
+                    <span style={{ color: '#C5A059', fontWeight: 'bold' }}>Pay</span>
                 </div>
-             </div>
+            </header>
         );
     }
 
     return (
-        <div className="navbar bg-base-100/70 backdrop-blur-xl shadow-lg sticky top-4 z-50 rounded-2xl mx-4 sm:mx-auto max-w-7xl mt-4 border border-base-content/10">
-            <div className="flex-1">
-                <Link href={showProfile ? "/dashboard" : "/"} className="btn btn-ghost normal-case text-xl text-primary gap-2">
-                    <PiggyBank className="w-5 h-5" /> WishPay
+        <header className="flex justify-between items-center px-6 py-5 bg-white z-20 relative border-b border-gray-100 shadow-sm">
+            <div className="flex items-center text-2xl font-bold tracking-tight">
+                <Link href={showProfile ? "/dashboard" : "/"} className="flex items-center">
+                    <span style={{ color: '#103B6D', fontWeight: 'bold' }}>Wish</span>
+                    <span style={{ color: '#C5A059', fontWeight: 'bold' }}>Pay</span>
                 </Link>
             </div>
-            <div className="flex-none gap-2">
+            
+            <div className="flex items-center gap-4">
                 {/* Theme Toggle */}
-                <label className="swap swap-rotate btn btn-ghost btn-circle text-base-content">
-                    {/* this hidden checkbox controls the state */}
+                <label className="swap swap-rotate btn btn-ghost btn-xs btn-circle text-slate-600">
                     <input
                         type="checkbox"
                         checked={resolvedTheme === 'dim' || theme === 'dim'}
                         onChange={handleToggle}
                     />
-
-                    {/* sun icon (shows when checked is false -> cupcake) */}
-                    <Sun className="swap-off w-5 h-5" />
-
-                    {/* moon icon (shows when checked is true -> dim) */}
-                    <Moon className="swap-on w-5 h-5" />
+                    <Sun className="swap-off w-4 h-4" />
+                    <Moon className="swap-on w-4 h-4" />
                 </label>
 
                 {showProfile && (
                     <div className="dropdown dropdown-end">
-                        <div tabIndex={0} role="button" className="btn btn-ghost btn-circle avatar placeholder">
-                            <div className="bg-neutral/20 text-neutral-content rounded-full w-8 h-8 flex items-center justify-center">
-                                <span className="text-xs font-bold text-neutral">ME</span>
-                            </div>
+                        <div tabIndex={0} role="button" className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center border border-gray-200 overflow-hidden hover:bg-gray-200 transition-colors">
+                            <User className="w-5 h-5 text-gray-500" />
                         </div>
-                        <ul tabIndex={0} className="mt-3 z-[1] p-2 shadow menu menu-sm dropdown-content bg-base-100 rounded-box w-52">
+                        <ul tabIndex={0} className="mt-3 z-[100] p-2 shadow-xl menu menu-sm dropdown-content bg-white rounded-2xl w-52 border border-gray-100">
                             <li>
-                                <a className="justify-between">
-                                    Update Profile
+                                <Link href="/profile" className="flex items-center justify-between py-2.5">
+                                    Profile Settings
                                     <Settings className="w-4 h-4" />
-                                </a>
+                                </Link>
                             </li>
                             <li>
-                                <Link href="/history" className="justify-between">
-                                    History
+                                <Link href="/history" className="flex items-center justify-between py-2.5">
+                                    Transaction History
                                     <History className="w-4 h-4" />
                                 </Link>
                             </li>
-                            <li><a onClick={onLogout || handleLogout} className="text-error">Logout <LogOut className="w-4 h-4" /></a></li>
+                            <div className="divider my-1 opacity-50"></div>
+                            <li>
+                                <a onClick={onLogout || handleLogout} className="text-red-600 flex items-center justify-between py-2.5 hover:bg-red-50">
+                                    Logout 
+                                    <LogOut className="w-4 h-4" />
+                                </a>
+                            </li>
                         </ul>
                     </div>
                 )}
             </div>
-        </div>
+        </header>
     );
 };

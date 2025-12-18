@@ -24,3 +24,12 @@ export const items = pgTable('items', {
   isArchived: boolean('is_archived').default(false).notNull(),
   dateArchived: timestamp('date_archived'),
 });
+
+export const bankAccounts = pgTable('bank_accounts', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id').references(() => users.id).notNull(),
+  name: text('name').notNull(),
+  color: text('color').default('blue').notNull(),
+  balance: integer('balance').default(0).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
