@@ -12,11 +12,14 @@ export default function ProfilePage() {
     const router = useRouter();
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [isUploading, setIsUploading] = useState(false);
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [formData, setFormData] = useState({
         name: '',
         email: '',
         password: '',
-        confirmPassword: ''
+        confirmPassword: '',
+        profilePicture: ''
     });
 
     useEffect(() => {
@@ -26,7 +29,8 @@ export default function ProfilePage() {
                 setFormData(prev => ({
                     ...prev,
                     name: response.data.name,
-                    email: response.data.email
+                    email: response.data.email,
+                    profilePicture: response.data.profilePicture || ''
                 }));
             } catch (error: any) {
                 toast.error('Failed to load profile');
@@ -45,6 +49,48 @@ export default function ProfilePage() {
         router.push('/login');
     };
 
+    const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        if (file.size > 5 * 1024 * 1024) { // 5MB limit
+             toast.error('Image size must be less than 5MB');
+             return;
+        }
+
+        setIsUploading(true);
+        // const uploadToast = toast.loading('Uploading and saving image...'); // Removed toast in favor of visual feedback and modal
+
+        try {
+            const formDataUpload = new FormData();
+            formDataUpload.append('file', file);
+
+            const response = await api.post('/api/upload', formDataUpload, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+            });
+
+            const newImageUrl = response.data.url;
+
+            // Auto-save to profile
+            await api.put('/api/user/profile', {
+                name: formData.name,
+                email: formData.email,
+                profilePicture: newImageUrl
+            });
+
+            setFormData(prev => ({ ...prev, profilePicture: newImageUrl }));
+            // toast.success('Profile picture updated!', { id: uploadToast });
+            setShowSuccessModal(true);
+        } catch (error: any) {
+            console.error(error);
+            toast.error(error.response?.data?.message || 'Failed to upload image.');
+        } finally {
+            setIsUploading(false);
+        }
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         
@@ -58,7 +104,8 @@ export default function ProfilePage() {
             await api.put('/api/user/profile', {
                 name: formData.name,
                 email: formData.email,
-                password: formData.password || undefined
+                password: formData.password || undefined,
+                profilePicture: formData.profilePicture
             });
             toast.success('Profile updated successfully');
             setFormData(prev => ({ ...prev, password: '', confirmPassword: '' }));
@@ -87,13 +134,25 @@ export default function ProfilePage() {
             <main className="px-6 flex-1">
                 {/* Profile Avatar */}
                 <div className="flex flex-col items-center mb-8">
-                    <div className="relative">
-                        <div className="w-28 h-28 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white shadow-xl shadow-blue-500/20">
-                            <span className="text-4xl font-bold">{formData.name.charAt(0).toUpperCase()}</span>
+                    <div className="relative group">
+                        <div className="w-28 h-28 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white shadow-xl shadow-blue-500/20 overflow-hidden relative">
+                            {formData.profilePicture ? (
+                                <img src={formData.profilePicture} alt="Profile" className={`w-full h-full object-cover transition-opacity duration-300 ${isUploading ? 'opacity-50' : 'opacity-100'}`} />
+                            ) : (
+                                <span className="text-4xl font-bold">{formData.name.charAt(0).toUpperCase()}</span>
+                            )}
+                            
+                            {/* Loading Overlay */}
+                            {isUploading && (
+                                <div className="absolute inset-0 flex items-center justify-center bg-black/30 z-10">
+                                    <span className="loading loading-spinner loading-md text-white"></span>
+                                </div>
+                            )}
                         </div>
-                        <button className="absolute bottom-0 right-0 p-2 bg-white rounded-full shadow-lg border border-gray-100 hover:bg-gray-50 transition-colors">
+                        <label className={`absolute bottom-0 right-0 p-2 bg-white rounded-full shadow-lg border border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer ${isUploading ? 'pointer-events-none opacity-50' : ''}`}>
                             <Camera className="w-5 h-5 text-gray-600" />
-                        </button>
+                            <input type="file" className="hidden" accept="image/*" onChange={handleImageChange} disabled={isUploading} />
+                        </label>
                     </div>
                     <h2 className="text-xl font-bold mt-4 text-[#1A1B2D]">{formData.name}</h2>
                     <p className="text-gray-500 text-sm">{formData.email}</p>
@@ -191,6 +250,25 @@ export default function ProfilePage() {
             </main>
 
             <BottomNav />
+
+            {/* Success Modal */}
+            {showSuccessModal && (
+                <div className="modal modal-open modal-bottom sm:modal-middle z-50">
+                    <div className="modal-box text-center">
+                        <div className="flex justify-center mb-4">
+                            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+                                <Save className="w-8 h-8 text-green-600" />
+                            </div>
+                        </div>
+                        <h3 className="font-bold text-lg text-[#1A1B2D]">Upload Complete!</h3>
+                        <p className="py-2 text-gray-600">Your profile picture has been updated successfully.</p>
+                        <div className="modal-action justify-center">
+                            <button className="btn btn-primary w-full max-w-[120px]" onClick={() => setShowSuccessModal(false)}>Awesome</button>
+                        </div>
+                    </div>
+                    <div className="modal-backdrop" onClick={() => setShowSuccessModal(false)}></div>
+                </div>
+            )}
         </div>
     );
 }

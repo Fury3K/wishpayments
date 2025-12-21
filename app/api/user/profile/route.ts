@@ -27,6 +27,7 @@ export async function GET(req: Request) {
             id: users.id,
             name: users.name,
             email: users.email,
+            profilePicture: users.profilePicture,
         }).from(users).where(eq(users.id, userId));
 
         if (!user) {
@@ -47,17 +48,20 @@ export async function PUT(req: Request) {
             return addCorsHeaders(NextResponse.json({ message: 'Unauthorized' }, { status: 401 }));
         }
 
-        const { name, email, password } = await req.json();
+        const { name, email, password, profilePicture } = await req.json();
 
         const updateData: any = { name, email };
         if (password && password.trim() !== '') {
             updateData.password = await bcrypt.hash(password, 10);
         }
+        if (profilePicture !== undefined) {
+             updateData.profilePicture = profilePicture;
+        }
 
         const [updatedUser] = await db.update(users)
             .set(updateData)
             .where(eq(users.id, userId))
-            .returning({ id: users.id, name: users.name, email: users.email });
+            .returning({ id: users.id, name: users.name, email: users.email, profilePicture: users.profilePicture });
 
         return addCorsHeaders(NextResponse.json(updatedUser, { status: 200 }));
     } catch (error) {

@@ -26,6 +26,7 @@ export default function Dashboard() {
     const [walletBalance, setWalletBalance] = useState(0);
     const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([]);
     const [loading, setLoading] = useState(true);
+    const [userProfile, setUserProfile] = useState<{ name: string; email: string; profilePicture?: string } | null>(null);
     
     // Carousel State
     const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -44,15 +45,17 @@ export default function Dashboard() {
     const fetchData = useCallback(async () => {
         setLoading(true);
         try {
-            const [itemsRes, balanceRes, banksRes] = await Promise.all([
+            const [itemsRes, balanceRes, banksRes, profileRes] = await Promise.all([
                 api.get('/api/items'),
                 api.get('/api/user/balance'),
-                api.get('/api/banks')
+                api.get('/api/banks'),
+                api.get('/api/user/profile')
             ]);
             
             setItems(itemsRes.data);
             setWalletBalance(balanceRes.data.balance || 0);
             setBankAccounts(banksRes.data);
+            setUserProfile(profileRes.data);
         } catch (error: any) {
             if (error.response && error.response.status === 401) {
                 router.push('/login');
@@ -214,8 +217,12 @@ export default function Dashboard() {
         <div className="bg-[#F3F4F6] font-sans text-[#1A1B2D] antialiased min-h-screen pb-24 relative">
             <header className="flex items-center justify-between px-6 py-6 sticky top-0 bg-[#F3F4F6] z-10">
                 <h1 className="text-xl font-bold text-[#1A1B2D]">WishPay Wallet</h1>
-                <button className="w-10 h-10 rounded-full border-gray-200 flex items-center justify-center">
-                    <UserCircle className="w-8 h-8 text-gray-400" />
+                <button className="w-10 h-10 rounded-full border-gray-200 flex items-center justify-center overflow-hidden">
+                    {userProfile?.profilePicture ? (
+                        <img src={userProfile.profilePicture} alt="Profile" className="w-full h-full object-cover" />
+                    ) : (
+                        <UserCircle className="w-8 h-8 text-gray-400" />
+                    )}
                 </button>
             </header>
 

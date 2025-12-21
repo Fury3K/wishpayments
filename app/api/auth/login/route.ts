@@ -28,6 +28,11 @@ export async function POST(req: Request) {
       return addCorsHeaders(NextResponse.json({ message: 'Invalid credentials' }, { status: 401 }));
     }
 
+    if (!user.password) {
+      console.log('User has no password set (OAuth user)');
+      return addCorsHeaders(NextResponse.json({ message: 'Invalid credentials' }, { status: 401 }));
+    }
+
     const passwordMatch = await comparePassword(password, user.password);
     console.log(`Password match result for ${email}: ${passwordMatch}`);
 

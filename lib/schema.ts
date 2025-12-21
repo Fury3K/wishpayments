@@ -6,9 +6,12 @@ export const itemTypeEnum = pgEnum('item_type', ['need', 'want']);
 export const users = pgTable('users', {
   id: serial('id').primaryKey(),
   email: text('email').notNull().unique(),
-  password: text('password').notNull(),
+  password: text('password'),
   name: text('name').notNull(),
   balance: integer('balance').default(0).notNull(),
+  profilePicture: text('profile_picture'),
+  googleId: text('google_id').unique(),
+  facebookId: text('facebook_id').unique(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 

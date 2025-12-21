@@ -30,9 +30,13 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
       </head>
       <body
-        className={`${poppins.variable} ${inter.variable} antialiased bg-gray-50 min-h-screen font-inter text-slate-800`}
+        className={`${poppins.variable} ${inter.variable} antialiased bg-slate-100 min-h-screen font-inter text-slate-800 flex justify-center`}
       >
-        <Providers>{children}</Providers>
+        <Providers>
+          <main className="w-full max-w-md bg-gray-50 min-h-screen relative shadow-2xl overflow-x-hidden">
+            {children}
+          </main>
+        </Providers>
       </body>
     </html>
   );

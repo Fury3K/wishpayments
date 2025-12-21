@@ -17,14 +17,19 @@ export default function GoalsPage() {
     const [loadingItems, setLoadingItems] = useState(true);
     const [isItemModalOpen, setIsItemModalOpen] = useState(false);
     const [balance, setBalance] = useState(0);
+    const [userProfile, setUserProfile] = useState<{ profilePicture?: string } | null>(null);
 
     const fetchItems = useCallback(async () => {
         setLoadingItems(true);
         try {
-            const itemsResponse = await api.get('/api/items');
+            const [itemsResponse, userBalanceResponse, profileResponse] = await Promise.all([
+                api.get('/api/items'),
+                api.get('/api/user/balance'),
+                api.get('/api/user/profile')
+            ]);
             setItems(itemsResponse.data);
-            const userBalanceResponse = await api.get('/api/user/balance');
             setBalance(userBalanceResponse.data.balance || 0);
+            setUserProfile(profileResponse.data);
         } catch (error: any) {
             if (error.response && error.response.status === 401) {
                 router.push('/login');
@@ -85,8 +90,12 @@ export default function GoalsPage() {
                     <ChevronLeft className="w-6 h-6" />
                 </Link>
                 <h1 className="text-xl font-bold text-[#1A1B2D]">Your Goals</h1>
-                <button className="w-10 h-10 rounded-full border-gray-200 flex items-center justify-center">
-                    <UserCircle className="w-8 h-8 text-gray-400" />
+                <button className="w-10 h-10 rounded-full border-gray-200 flex items-center justify-center overflow-hidden">
+                    {userProfile?.profilePicture ? (
+                        <img src={userProfile.profilePicture} alt="Profile" className="w-full h-full object-cover" />
+                    ) : (
+                        <UserCircle className="w-8 h-8 text-gray-400" />
+                    )}
                 </button>
             </header>
 

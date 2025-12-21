@@ -20,6 +20,34 @@ async function getUserIdFromRequest(req: Request): Promise<number | null> {
     return payload.userId;
 }
 
+export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const userId = await getUserIdFromRequest(req);
+    if (!userId) {
+      return addCorsHeaders(NextResponse.json({ message: 'Unauthorized' }, { status: 401 }));
+    }
+
+    const resolvedParams = await params;
+    const itemId = parseInt(resolvedParams.id, 10);
+    if (isNaN(itemId)) {
+      return addCorsHeaders(NextResponse.json({ message: 'Invalid item ID' }, { status: 400 }));
+    }
+
+    const item = await db.query.items.findFirst({
+        where: and(eq(items.id, itemId), eq(items.userId, userId))
+    });
+
+    if (!item) {
+      return addCorsHeaders(NextResponse.json({ message: 'Item not found' }, { status: 404 }));
+    }
+
+    return addCorsHeaders(NextResponse.json(item, { status: 200 }));
+  } catch (error) {
+    console.error('GET item error:', error);
+    return addCorsHeaders(NextResponse.json({ message: 'Internal server error' }, { status: 500 }));
+  }
+}
+
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const userId = await getUserIdFromRequest(req);

@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Item Details</title>
+<!-- Tailwind CSS with Plugins -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- FontAwesome -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
+<!-- Custom CSS for specific chart styling -->
+<style data-purpose="chart-styles">
+        /* 
+         * Conic Gradient Chart
+         * Creates a donut chart effect using a conical gradient and a mask.
+         * The prompt requests rounded caps if possible. I've added pseudo-elements 
+         * to simulate rounded caps at the start (0deg) and end (270deg/75%) of the arc.
+         */
+        .chart-container {
+            position: relative;
+            width: 260px;
+            height: 260px;
+            border-radius: 50%;
+            background: conic-gradient(#0284c7 0% 75%, #f1f5f9 75% 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Inner white circle for donut effect */
+        .chart-inner {
+            background-color: white;
+            width: 85%;
+            height: 85%;
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+        }
+
+        /* Rounded Cap - Start (Top Center) */
+        .chart-cap-start {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 15%; /* Approx width of the stroke */
+            height: 15%;
+            background-color: #0284c7;
+            border-radius: 50%;
+            z-index: 5;
+        }
+
+        /* Rounded Cap - End (At 75% / 270deg - Left Center) */
+        .chart-cap-end {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            transform: translateY(-50%);
+            width: 15%; /* Approx width of the stroke */
+            height: 15%;
+            background-color: #0284c7;
+            border-radius: 50%;
+            z-index: 5;
+        }
+    </style>
+<script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              'app-bg': '#f8f9fa',
+            },
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+            }
+          }
+        }
+      }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-gray-50 text-slate-800 font-sans antialiased">
+<!-- BEGIN: Mobile Container -->
+<div class="max-w-md mx-auto bg-white min-h-screen relative shadow-2xl overflow-hidden pb-20">
+<!-- Status Bar Simulation (Optional visual spacing) -->
+<div class="h-10 bg-white w-full"></div>
+<!-- BEGIN: Header -->
+<header class="flex items-center justify-between px-4 py-2 bg-white sticky top-0 z-20">
+<!-- Back Button -->
+<button class="w-10 h-10 flex items-center justify-center text-blue-500 hover:bg-blue-50 rounded-full transition">
+<i class="fas fa-chevron-left text-xl"></i>
+</button>
+<!-- Title -->
+<h1 class="text-lg font-bold text-slate-900">Item Details</h1>
+<!-- Spacer for alignment -->
+<div class="w-10"></div>
+</header>
+<!-- END: Header -->
+<!-- BEGIN: Main Content -->
+<main class="px-6 pt-4 pb-8 space-y-8">
+<!-- BEGIN: Chart Section -->
+<section class="flex flex-col items-center justify-center">
+<div class="chart-container shadow-sm">
+<!-- Caps for rounded ends -->
+<div class="chart-cap-start"></div>
+<div class="chart-cap-end"></div>
+<!-- Inner Content -->
+<div class="chart-inner">
+<span class="text-5xl font-bold text-blue-700 tracking-tight">75%</span>
+<span class="font-bold text-black mt-2 text-lg">Groceries for July</span>
+<span class="text-gray-400 text-sm font-medium mt-1">$375 of $500</span>
+</div>
+</div>
+</section>
+<!-- END: Chart Section -->
+<!-- BEGIN: Priority Level Section -->
+<section>
+<h2 class="font-bold text-slate-900 mb-3 text-lg">Priority Level</h2>
+<div class="flex flex-row gap-2 w-full">
+<!-- High Button -->
+<div class="flex-1 bg-red-500 text-white rounded-xl py-3 px-1 text-center shadow-lg shadow-red-500/40 flex flex-col justify-center items-center cursor-pointer">
+<span class="font-bold text-base leading-tight">High</span>
+<span class="text-xs text-red-100 font-medium">(Critical)</span>
+</div>
+<!-- Medium Button -->
+<div class="flex-1 bg-orange-400 text-white rounded-xl py-3 px-1 text-center opacity-90 hover:opacity-100 flex flex-col justify-center items-center cursor-pointer">
+<span class="font-bold text-base leading-tight">Medium</span>
+<span class="text-xs text-orange-100 font-medium">(Essential)</span>
+</div>
+<!-- Low Button -->
+<div class="flex-1 bg-green-500 text-white rounded-xl py-3 px-1 text-center opacity-90 hover:opacity-100 flex flex-col justify-center items-center cursor-pointer">
+<span class="font-bold text-base leading-tight">Low</span>
+<span class="text-xs text-green-100 font-medium">(Flexible)</span>
+</div>
+</div>
+</section>
+<!-- END: Priority Level Section -->
+<!-- BEGIN: Safeguards Section -->
+<section>
+<h2 class="font-bold text-slate-900 mt-2 mb-3 text-lg">Safeguards</h2>
+<div class="space-y-3">
+<!-- Item 1 -->
+<div class="flex items-center gap-3">
+<i class="fas fa-check-circle text-blue-600 text-xl"></i>
+<div class="w-8 flex justify-center">
+<i class="fas fa-shield-alt text-green-500 text-lg"></i>
+</div>
+<span class="text-slate-700 font-medium text-base">Emergency Fund Check</span>
+</div>
+<!-- Item 2 -->
+<div class="flex items-center gap-3">
+<i class="fas fa-check-circle text-blue-600 text-xl"></i>
+<div class="w-8 flex justify-center">
+<i class="fas fa-lock text-blue-500 text-lg"></i>
+</div>
+<span class="text-slate-700 font-medium text-base">Bill Buffer Protected</span>
+</div>
+<!-- Item 3 with Toggle -->
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-3">
+<i class="fas fa-check-circle text-blue-600 text-xl"></i>
+<div class="w-8 flex justify-center">
+<i class="fas fa-tachometer-alt text-blue-500 text-lg"></i>
+</div>
+<span class="text-slate-700 font-medium text-base">Auto-Save Enabled</span>
+</div>
+<!-- Toggle Switch -->
+<div class="w-12 h-7 bg-blue-600 rounded-full relative cursor-pointer shadow-inner">
+<div class="absolute right-1 top-1 bg-white w-5 h-5 rounded-full shadow-sm transition-transform"></div>
+</div>
+</div>
+</div>
+</section>
+<!-- END: Safeguards Section -->
+<!-- BEGIN: Action Buttons -->
+<section class="space-y-4 pt-4">
+<button class="w-full border-2 border-blue-500 text-blue-600 bg-white rounded-xl py-3.5 font-bold text-lg hover:bg-blue-50 transition-colors">
+                    Edit Details
+                </button>
+<button class="w-full bg-blue-700 text-white rounded-xl py-4 font-bold text-lg shadow-lg hover:bg-blue-800 transition-colors">
+                    Add Funds
+                </button>
+</section>
+<!-- END: Action Buttons -->
+</main>
+<!-- END: Main Content -->
+<!-- BEGIN: Bottom Navigation -->
+<nav class="absolute bottom-0 w-full bg-white border-t border-gray-200 flex justify-around items-center py-2 pb-5 z-30 text-xs font-medium">
+<!-- Home -->
+<div class="flex flex-col items-center gap-1 text-gray-400 cursor-pointer hover:text-gray-600">
+<i class="fas fa-home text-2xl mb-0.5"></i>
+<span>Home</span>
+</div>
+<!-- Needs (Active) -->
+<div class="flex flex-col items-center gap-1 text-blue-600 cursor-pointer">
+<i class="fas fa-chart-bar text-2xl mb-0.5"></i>
+<span>Needs</span>
+</div>
+<!-- Wants -->
+<div class="flex flex-col items-center gap-1 text-gray-400 cursor-pointer hover:text-gray-600">
+<i class="far fa-heart text-2xl mb-0.5"></i>
+<span>Wants</span>
+</div>
+<!-- Profile -->
+<div class="flex flex-col items-center gap-1 text-gray-400 cursor-pointer hover:text-gray-600">
+<i class="far fa-user text-2xl mb-0.5"></i>
+<span>Profile</span>
+</div>
+</nav>
+<!-- END: Bottom Navigation -->
+</div>
+<!-- END: Mobile Container -->
+</body></html>
