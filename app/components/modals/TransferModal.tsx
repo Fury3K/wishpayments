@@ -36,16 +36,16 @@ export function TransferModal({
                 // If wallet is hidden, default to first bank
                 if (banks.length > 0) {
                     setSourceId(banks[0].id.toString());
-                    // Set dest to second bank if available, else empty
-                    setDestId(banks.length > 1 ? banks[1].id.toString() : '');
+                    // Set dest to second bank if available, else 'custom'
+                    setDestId(banks.length > 1 ? banks[1].id.toString() : 'custom');
                 } else {
-                     setSourceId('');
-                     setDestId('');
+                     setSourceId('custom');
+                     setDestId('custom');
                 }
             } else {
                 setSourceId('wallet');
-                // Default dest to first bank if available, else empty
-                setDestId(banks.length > 0 ? banks[0].id.toString() : '');
+                // Default dest to first bank if available, else 'custom'
+                setDestId(banks.length > 0 ? banks[0].id.toString() : 'custom');
             }
         }
     }, [isOpen, banks, isWalletHidden]);

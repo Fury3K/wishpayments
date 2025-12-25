@@ -49,7 +49,7 @@ export default function ProfilePage() {
     const confirmLogout = () => {
         localStorage.removeItem('token');
         toast.success('Logged out successfully');
-        router.push('/login');
+        router.push('/');
     };
 
     const handleLogout = () => {

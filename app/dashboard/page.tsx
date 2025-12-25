@@ -208,7 +208,7 @@ export default function Dashboard() {
         }
     };
 
-    const handleCashOut = async (amount: number) => {
+    const handleCashOut = async (amount: number, reason: string) => {
         if (activeAccountId === 'wallet') {
             try {
                 const newBalance = walletBalance - amount;
@@ -221,7 +221,7 @@ export default function Dashboard() {
                     transaction: {
                         amount,
                         type: 'withdrawal',
-                        description: 'Removed funds from WishPay Wallet'
+                        description: reason || 'Removed funds from WishPay Wallet'
                     }
                 });
                 setWalletBalance(newBalance);
@@ -245,7 +245,7 @@ export default function Dashboard() {
                          transaction: {
                              amount,
                              type: 'withdrawal',
-                             description: `Removed funds from ${bank.name}`
+                             description: reason || `Removed funds from ${bank.name}`
                          }
                      });
                      setBankAccounts(prev => prev.map(b => b.id === activeAccountId ? { ...b, balance: newBalance } : b));

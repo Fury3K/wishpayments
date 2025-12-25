@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { bankAccounts, transactions } from '@/lib/schema';
+import { bankAccounts, transactions, items } from '@/lib/schema';
 import { eq, and } from 'drizzle-orm';
 import { verifyJWT } from '@/lib/auth';
 import { addCorsHeaders, corsOptions } from '@/lib/cors';
@@ -75,9 +75,29 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
             return addCorsHeaders(NextResponse.json({ message: 'Invalid bank ID' }, { status: 400 }));
         }
 
-        const [deletedBank] = await db.delete(bankAccounts)
-            .where(and(eq(bankAccounts.id, bankId), eq(bankAccounts.userId, userId)))
-            .returning();
+        let deletedBank;
+
+        await db.transaction(async (tx) => {
+            // Unlink items first (set bankId to null)
+            await tx.update(items)
+                .set({ bankId: null })
+                .where(and(eq(items.bankId, bankId), eq(items.userId, userId)));
+
+            // Delete associated transactions
+            await tx.delete(transactions)
+                .where(and(eq(transactions.bankId, bankId), eq(transactions.userId, userId)));
+
+            // Delete the bank account
+            [deletedBank] = await tx.delete(bankAccounts)
+                .where(and(eq(bankAccounts.id, bankId), eq(bankAccounts.userId, userId)))
+                .returning();
+            
+            if (!deletedBank) {
+                // This will cause the transaction to rollback if we throw here? 
+                // Actually Drizzle transaction rollback on error.
+                // But we can check after transaction block or throw here to abort.
+            }
+        });
 
         if (!deletedBank) {
             return addCorsHeaders(NextResponse.json({ message: 'Bank not found' }, { status: 404 }));

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Poppins, Inter } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
+import { InstallPrompt } from "./components/InstallPrompt";
 
 const poppins = Poppins({
   variable: "--font-poppins",
@@ -53,6 +54,7 @@ export default function RootLayout({
         <Providers>
           <main className="w-full max-w-md bg-gray-50 min-h-screen relative shadow-2xl overflow-x-hidden">
             {children}
+            <InstallPrompt />
           </main>
         </Providers>
       </body>

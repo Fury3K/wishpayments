@@ -2,7 +2,7 @@
 
 import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
-import { ChevronLeft, Edit3, CheckCircle } from 'lucide-react';
+import { ChevronLeft, Edit3, CheckCircle, Trash2 } from 'lucide-react';
 import api from '@/lib/api';
 import { Item, BankAccount } from '@/app/types';
 import { toast } from 'react-hot-toast';
@@ -11,6 +11,7 @@ import { ItemModal } from '@/app/components/AddItemModal';
 import { AddFundsModal } from '@/app/components/modals/AddFundsModal';
 import { DeductFundsModal } from '@/app/components/modals/DeductFundsModal';
 import { CompleteConfirmationModal } from '@/app/components/modals/CompleteConfirmationModal';
+import { DeleteConfirmationModal } from '@/app/components/modals/DeleteConfirmationModal';
 import Link from 'next/link';
 
 export default function ItemDetailsPage({ params }: { params: Promise<{ id: string }> }) {
@@ -25,6 +26,7 @@ export default function ItemDetailsPage({ params }: { params: Promise<{ id: stri
     const [isAddFundsModalOpen, setIsAddFundsModalOpen] = useState(false);
     const [isDeductFundsModalOpen, setIsDeductFundsModalOpen] = useState(false);
     const [isCompleteModalOpen, setIsCompleteModalOpen] = useState(false);
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
     const fetchData = async () => {
         try {
@@ -221,6 +223,17 @@ export default function ItemDetailsPage({ params }: { params: Promise<{ id: stri
         }
     };
 
+    const handleDelete = async () => {
+        if (!item) return;
+        try {
+            await api.delete(`/api/items/${item.id}?permanent=true`);
+            toast.success('Goal deleted!');
+            router.push('/goals');
+        } catch (error: any) {
+            toast.error('Failed to delete goal.');
+        }
+    };
+
     if (loading) {
          return <div className="min-h-screen flex justify-center items-center bg-gray-50"><span className="loading loading-spinner loading-lg text-blue-600"></span></div>;
     }
@@ -318,6 +331,12 @@ export default function ItemDetailsPage({ params }: { params: Promise<{ id: stri
                             Deduct Funds
                         </button>
                     )}
+                    <button 
+                        onClick={() => setIsDeleteModalOpen(true)}
+                        className="w-full text-red-500 hover:text-red-700 font-semibold py-3 hover:bg-red-50 rounded-xl transition-all flex items-center justify-center gap-2"
+                    >
+                        <Trash2 className="w-5 h-5" /> Delete Goal
+                    </button>
                 </section>
             </main>
 
@@ -361,6 +380,14 @@ export default function ItemDetailsPage({ params }: { params: Promise<{ id: stri
                 itemName={item.name}
                 onConfirm={handleComplete}
                 onCancel={() => setIsCompleteModalOpen(false)}
+            />
+
+            <DeleteConfirmationModal
+                isOpen={isDeleteModalOpen}
+                itemName={item.name}
+                onBought={handleComplete}
+                onRemove={handleDelete}
+                onCancel={() => setIsDeleteModalOpen(false)}
             />
         </div>
     );

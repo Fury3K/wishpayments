@@ -6,20 +6,22 @@ import { X, Check } from 'lucide-react';
 interface CashOutModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onConfirm: (amount: number) => void;
+    onConfirm: (amount: number, reason: string) => void;
     currentBalance: number;
 }
 
 export function CashOutModal({ isOpen, onClose, onConfirm, currentBalance }: CashOutModalProps) {
     const [amount, setAmount] = useState('');
+    const [reason, setReason] = useState('');
 
     if (!isOpen) return null;
 
     const handleConfirm = () => {
         const val = parseFloat(amount);
-        if (isNaN(val) || val <= 0 || val > currentBalance) return;
-        onConfirm(val);
+        if (isNaN(val) || val <= 0 || val > currentBalance || !reason.trim()) return;
+        onConfirm(val, reason);
         setAmount('');
+        setReason('');
         onClose();
     };
 
@@ -34,7 +36,7 @@ export function CashOutModal({ isOpen, onClose, onConfirm, currentBalance }: Cas
                         <span className="text-2xl">💸</span>
                     </div>
                     <h3 className="text-xl font-bold">Remove Funds</h3>
-                    <p className="text-red-100 text-sm mt-1">Transfer back to bank</p>
+                    <p className="text-red-100 text-sm mt-1">Withdraw Funds</p>
                 </div>
 
                 <div className="p-6">
@@ -42,7 +44,7 @@ export function CashOutModal({ isOpen, onClose, onConfirm, currentBalance }: Cas
                          <p className="text-sm text-gray-500">Available Balance: <span className="font-semibold text-gray-700">₱{currentBalance.toLocaleString()}</span></p>
                     </div>
 
-                    <div className="relative mb-6">
+                    <div className="relative mb-4">
                         <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-semibold text-lg">₱</span>
                         <input
                             type="number"
@@ -51,6 +53,16 @@ export function CashOutModal({ isOpen, onClose, onConfirm, currentBalance }: Cas
                             placeholder="0.00"
                             className="w-full pl-10 pr-4 py-4 bg-gray-50 border-2 border-gray-100 rounded-2xl text-2xl font-bold text-gray-800 focus:outline-none focus:border-red-500 focus:ring-0 transition-all placeholder:text-gray-300"
                             autoFocus
+                        />
+                    </div>
+                    
+                    <div className="mb-6">
+                        <input
+                            type="text"
+                            value={reason}
+                            onChange={(e) => setReason(e.target.value)}
+                            placeholder="Reason (e.g. Withdrawal)"
+                            className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-xl text-gray-800 focus:outline-none focus:border-red-500 focus:ring-0 transition-all placeholder:text-gray-400"
                         />
                     </div>
 
@@ -77,7 +89,7 @@ export function CashOutModal({ isOpen, onClose, onConfirm, currentBalance }: Cas
 
                     <button
                         onClick={handleConfirm}
-                        disabled={!amount || parseFloat(amount) <= 0 || parseFloat(amount) > currentBalance}
+                        disabled={!amount || parseFloat(amount) <= 0 || parseFloat(amount) > currentBalance || !reason.trim()}
                         className="w-full py-4 rounded-xl bg-red-600 hover:bg-red-700 disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed text-white font-bold text-lg shadow-lg shadow-red-500/30 transition-all flex items-center justify-center gap-2"
                     >
                         Confirm <Check className="w-5 h-5" />

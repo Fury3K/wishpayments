@@ -22,6 +22,13 @@ export function CashInModal({ isOpen, onClose, onConfirm }: CashInModalProps) {
         onClose();
     };
 
+    const handleAddAmount = (val: number) => {
+        setAmount(prev => {
+            const current = parseFloat(prev) || 0;
+            return (current + val).toString();
+        });
+    };
+
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
             <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden transform transition-all scale-100">
@@ -51,19 +58,19 @@ export function CashInModal({ isOpen, onClose, onConfirm }: CashInModalProps) {
 
                     <div className="grid grid-cols-3 gap-3 mb-6">
                          <button 
-                            onClick={() => setAmount('100')}
+                            onClick={() => handleAddAmount(100)}
                             className="py-2 rounded-xl bg-gray-100 text-gray-600 font-medium text-sm hover:bg-gray-200 transition-colors"
                          >
                             +₱100
                          </button>
                          <button 
-                            onClick={() => setAmount('500')}
+                            onClick={() => handleAddAmount(500)}
                             className="py-2 rounded-xl bg-gray-100 text-gray-600 font-medium text-sm hover:bg-gray-200 transition-colors"
                          >
                             +₱500
                          </button>
                          <button 
-                            onClick={() => setAmount('1000')}
+                            onClick={() => handleAddAmount(1000)}
                             className="py-2 rounded-xl bg-gray-100 text-gray-600 font-medium text-sm hover:bg-gray-200 transition-colors"
                          >
                             +₱1k

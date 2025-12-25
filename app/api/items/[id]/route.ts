@@ -115,19 +115,40 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
       return addCorsHeaders(NextResponse.json({ message: 'Invalid item ID' }, { status: 400 }));
     }
 
-    const [deletedItem] = await db.update(items)
-      .set({
-        isArchived: true,
-        dateArchived: new Date(),
-      })
-      .where(and(eq(items.id, itemId), eq(items.userId, userId)))
-      .returning();
+    const { searchParams } = new URL(req.url);
+    const permanent = searchParams.get('permanent') === 'true';
 
-    if (!deletedItem) {
-      return addCorsHeaders(NextResponse.json({ message: 'Item not found or unauthorized' }, { status: 404 }));
+    if (permanent) {
+        let deletedItem;
+        await db.transaction(async (tx) => {
+            // Delete associated transactions first
+            await tx.delete(transactions)
+                .where(and(eq(transactions.itemId, itemId), eq(transactions.userId, userId)));
+
+            // Delete the item
+            [deletedItem] = await tx.delete(items)
+                .where(and(eq(items.id, itemId), eq(items.userId, userId)))
+                .returning();
+        });
+
+        if (!deletedItem) {
+             return addCorsHeaders(NextResponse.json({ message: 'Item not found or unauthorized' }, { status: 404 }));
+        }
+        return addCorsHeaders(NextResponse.json({ message: 'Item deleted permanently' }, { status: 200 }));
+    } else {
+        const [deletedItem] = await db.update(items)
+          .set({
+            isArchived: true,
+            dateArchived: new Date(),
+          })
+          .where(and(eq(items.id, itemId), eq(items.userId, userId)))
+          .returning();
+
+        if (!deletedItem) {
+          return addCorsHeaders(NextResponse.json({ message: 'Item not found or unauthorized' }, { status: 404 }));
+        }
+        return addCorsHeaders(NextResponse.json({ message: 'Item archived successfully' }, { status: 200 }));
     }
-
-    return addCorsHeaders(NextResponse.json({ message: 'Item archived successfully' }, { status: 200 }));
   } catch (error) {
     console.error('DELETE item error:', error);
     return addCorsHeaders(NextResponse.json({ message: 'Internal server error' }, { status: 500 }));
