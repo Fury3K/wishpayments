@@ -17,6 +17,10 @@ export function BankCard({ name, balance, color, onCashIn, onCashOut, onEdit }: 
             case 'purple': return 'from-purple-600 to-indigo-600';
             case 'green': return 'from-emerald-600 to-teal-500';
             case 'orange': return 'from-orange-500 to-red-500';
+            case 'red': return 'from-red-600 to-rose-600';
+            case 'pink': return 'from-pink-500 to-rose-400';
+            case 'cyan': return 'from-cyan-500 to-blue-500';
+            case 'yellow': return 'from-yellow-400 to-orange-400';
             case 'black': return 'from-gray-800 to-gray-900';
             case 'blue':
             default: return 'from-[#1c3d9c] to-[#3b6ce3]';
@@ -28,6 +32,10 @@ export function BankCard({ name, balance, color, onCashIn, onCashOut, onEdit }: 
             case 'purple': return 'shadow-purple-500/30';
             case 'green': return 'shadow-emerald-500/30';
             case 'orange': return 'shadow-orange-500/30';
+            case 'red': return 'shadow-red-500/30';
+            case 'pink': return 'shadow-pink-500/30';
+            case 'cyan': return 'shadow-cyan-500/30';
+            case 'yellow': return 'shadow-yellow-500/30';
             case 'black': return 'shadow-gray-500/30';
             case 'blue':
             default: return 'shadow-blue-500/30';

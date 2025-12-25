@@ -313,21 +313,31 @@ export default function Dashboard() {
                                 <span className="text-base font-extrabold text-[#1A1B2D]">₱{walletBalance.toLocaleString()}</span>
                             </li>
                             {/* Dynamically Added Banks */}
-                            {bankAccounts.map((bank) => (
-                                <li key={bank.id} className="flex items-center justify-between cursor-pointer hover:bg-gray-50 p-2 -mx-2 rounded-lg transition-colors" onClick={() => openEditBank(bank)}>
-                                    <div className="flex items-center gap-3">
-                                        <div className={`w-3 h-3 rounded-full shadow-[0_0_8px_rgba(0,0,0,0.2)] 
-                                            ${bank.color === 'purple' ? 'bg-purple-600 shadow-purple-500/50' : 
-                                              bank.color === 'green' ? 'bg-emerald-500 shadow-emerald-500/50' : 
-                                              bank.color === 'orange' ? 'bg-orange-500 shadow-orange-500/50' :
-                                              bank.color === 'black' ? 'bg-gray-800 shadow-gray-500/50' :
-                                              'bg-blue-600 shadow-blue-500/50'}`}
-                                        ></div>
-                                        <span className="text-base font-medium text-gray-700">{bank.name}</span>
-                                    </div>
-                                    <span className="text-base font-extrabold text-[#1A1B2D]">₱{bank.balance.toLocaleString()}</span>
-                                </li>
-                            ))}
+                            {bankAccounts.map((bank) => {
+                                const getIndicatorClass = (color: string) => {
+                                    switch (color) {
+                                        case 'purple': return 'bg-purple-600 shadow-purple-500/50';
+                                        case 'green': return 'bg-emerald-500 shadow-emerald-500/50';
+                                        case 'orange': return 'bg-orange-500 shadow-orange-500/50';
+                                        case 'red': return 'bg-red-600 shadow-red-500/50';
+                                        case 'pink': return 'bg-pink-500 shadow-pink-500/50';
+                                        case 'cyan': return 'bg-cyan-500 shadow-cyan-500/50';
+                                        case 'yellow': return 'bg-yellow-400 shadow-yellow-500/50';
+                                        case 'black': return 'bg-gray-800 shadow-gray-500/50';
+                                        case 'blue': default: return 'bg-blue-600 shadow-blue-500/50';
+                                    }
+                                };
+
+                                return (
+                                    <li key={bank.id} className="flex items-center justify-between cursor-pointer hover:bg-gray-50 p-2 -mx-2 rounded-lg transition-colors" onClick={() => openEditBank(bank)}>
+                                        <div className="flex items-center gap-3">
+                                            <div className={`w-3 h-3 rounded-full shadow-[0_0_8px_rgba(0,0,0,0.2)] ${getIndicatorClass(bank.color)}`}></div>
+                                            <span className="text-base font-medium text-gray-700">{bank.name}</span>
+                                        </div>
+                                        <span className="text-base font-extrabold text-[#1A1B2D]">₱{bank.balance.toLocaleString()}</span>
+                                    </li>
+                                );
+                            })}
                             {bankAccounts.length === 0 && (
                                 <li className="text-center text-gray-400 py-2 text-sm">No additional banks added yet.</li>
                             )}

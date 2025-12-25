@@ -21,6 +21,10 @@ export function EditBankModal({ isOpen, onClose, onSave, onDelete, bankToEdit }:
         { id: 'purple', value: 'from-purple-600 to-indigo-600', label: 'Royal' },
         { id: 'green', value: 'from-emerald-600 to-teal-500', label: 'Forest' },
         { id: 'orange', value: 'from-orange-500 to-red-500', label: 'Sunset' },
+        { id: 'red', value: 'from-red-600 to-rose-600', label: 'Fire' },
+        { id: 'pink', value: 'from-pink-500 to-rose-400', label: 'Rose' },
+        { id: 'cyan', value: 'from-cyan-500 to-blue-500', label: 'Sky' },
+        { id: 'yellow', value: 'from-yellow-400 to-orange-400', label: 'Gold' },
         { id: 'black', value: 'from-gray-800 to-gray-900', label: 'Midnight' },
     ];
 
@@ -93,7 +97,7 @@ export function EditBankModal({ isOpen, onClose, onSave, onDelete, bankToEdit }:
                         <label className="text-sm font-medium text-gray-700 ml-1 flex items-center gap-2">
                             <Palette className="w-4 h-4" /> Card Color
                         </label>
-                        <div className="flex gap-2 justify-between">
+                        <div className="flex flex-wrap gap-3 justify-start">
                             {colors.map((c) => (
                                 <button
                                     key={c.id}
