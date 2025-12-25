@@ -11,4 +11,12 @@ export interface Item {
   dateAdded: string;
   isArchived?: boolean;
   dateArchived?: string | null;
+  bankId?: number | null;
+}
+
+export interface BankAccount {
+  id: number;
+  name: string;
+  balance: number;
+  color: string;
 }

@@ -16,10 +16,13 @@ WishPay helps you visualize this balance, ensuring you don't accidentally spend 
 ## ✨ Key Features
 
 *   **Smart Categorization:** Distinct tabs for "Needs" and "Wants" to keep your priorities clear.
-*   **Virtual Wallet:** manage a central balance. "Cash In" to add funds to your wallet, then allocate them to specific goals.
-*   **Goal Tracking:** detailed progress bars for every item. See exactly how much you've saved and how much is left to go.
-*   **Priority System:** Mark needs as High, Medium, or Low priority to know what to fund first.
-*   **Safe Guards:** Built-in warnings prevent you from funding "Wants" if you have high-priority "Needs" that are still unfunded.
+*   **Flexible Funding Sources:** Link your goals to a central **WishPay Wallet** or multiple **Bank Accounts**. Choose where the money comes from during setup or when adding funds.
+*   **Multi-Bank Management:** Add and customize multiple bank accounts with unique colors (Blue, Purple, Green, Orange, Red, Pink, Cyan, Yellow, Black).
+*   **Goal Tracking:** Detailed progress bars for every item. See exactly how much you've saved and how much is left to go.
+*   **Visual Indicators:** Vertical color strips on goal cards and transaction history items show exactly which bank is funding each goal.
+*   **Priority System:** Mark needs as High, Medium, or Low priority (with corresponding icons: 🔥, ⚡, 🌱) to know what to fund first.
+*   **Advanced History:** Filter your transaction history by type (Needs/Wants) and by specific funding source (Wallet or Bank).
+*   **Safe Guards:** Built-in logic prevents you from funding "Wants" if you have high-priority "Needs" that are still unfunded.
 *   **Theme Support:** Beautiful UI with seamless Dark (Dim) and Light (Cupcake) mode support.
 
 ## 🛠️ Tech Stack

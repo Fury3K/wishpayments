@@ -2,9 +2,9 @@
 
 import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
-import { ChevronLeft, CheckCircle, Shield, Lock, Activity, Edit3 } from 'lucide-react';
+import { ChevronLeft, Edit3 } from 'lucide-react';
 import api from '@/lib/api';
-import { Item } from '@/app/types';
+import { Item, BankAccount } from '@/app/types';
 import { toast } from 'react-hot-toast';
 import { BottomNav } from '@/app/components/BottomNav';
 import { ItemModal } from '@/app/components/AddItemModal';
@@ -16,16 +16,21 @@ export default function ItemDetailsPage({ params }: { params: Promise<{ id: stri
     const router = useRouter();
     const [item, setItem] = useState<Item | null>(null);
     const [balance, setBalance] = useState(0);
+    const [banks, setBanks] = useState<BankAccount[]>([]);
     const [loading, setLoading] = useState(true);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isAddFundsModalOpen, setIsAddFundsModalOpen] = useState(false);
 
     const fetchData = async () => {
         try {
-            const itemResponse = await api.get(`/api/items/${id}`);
+            const [itemResponse, balanceResponse, banksResponse] = await Promise.all([
+                api.get(`/api/items/${id}`),
+                api.get('/api/user/balance'),
+                api.get('/api/banks')
+            ]);
             setItem(itemResponse.data);
-            const balanceResponse = await api.get('/api/user/balance');
             setBalance(balanceResponse.data.balance || 0);
+            setBanks(banksResponse.data || []);
         } catch (error: any) {
             toast.error('Failed to fetch item details.');
             router.push('/goals');
@@ -47,18 +52,43 @@ export default function ItemDetailsPage({ params }: { params: Promise<{ id: stri
                 name: itemData.name,
                 price: parseFloat(itemData.price),
                 priority: itemData.priority,
-                saved: parseFloat(itemData.saved || item.saved)
+                saved: parseFloat(itemData.saved || item.saved),
+                bankId: itemData.bankId
             };
             
             const savedDiff = updatedItemData.saved - item.saved;
+            const bankId = itemData.bankId;
+
+            // Check balance of source account
+            let currentSourceBalance = 0;
+            if (!bankId) {
+                currentSourceBalance = balance;
+            } else {
+                const bank = banks.find(b => b.id === bankId);
+                currentSourceBalance = bank?.balance || 0;
+            }
+
+            if (savedDiff > currentSourceBalance) {
+                toast.error("Insufficient funds in selected account!");
+                return;
+            }
 
             const response = await api.put(`/api/items/${item.id}`, updatedItemData);
             setItem(response.data);
 
             if (savedDiff !== 0) {
-                 const newBalance = balance - savedDiff;
-                 const balanceResponse = await api.put('/api/user/balance', { balance: newBalance });
-                 setBalance(balanceResponse.data.balance);
+                if (!bankId) {
+                    const newBalance = balance - savedDiff;
+                    const balanceResponse = await api.put('/api/user/balance', { balance: newBalance });
+                    setBalance(balanceResponse.data.balance);
+                } else {
+                    const bank = banks.find(b => b.id === bankId);
+                    if (bank) {
+                        const newBankBalance = bank.balance - savedDiff;
+                        await api.put(`/api/banks/${bank.id}`, { ...bank, balance: newBankBalance });
+                        setBanks(prev => prev.map(b => b.id === bank.id ? { ...b, balance: newBankBalance } : b));
+                    }
+                }
             }
 
             toast.success('Item details updated!');
@@ -68,7 +98,7 @@ export default function ItemDetailsPage({ params }: { params: Promise<{ id: stri
         }
     };
 
-    const handleAddFunds = async (amount: number) => {
+    const handleAddFunds = async (amount: number, selectedBankId: number | null) => {
         if (!item) return;
 
         const newSaved = item.saved + amount;
@@ -78,9 +108,18 @@ export default function ItemDetailsPage({ params }: { params: Promise<{ id: stri
             const response = await api.put(`/api/items/${item.id}`, updatedItemData);
             setItem(response.data);
 
-            const newBalance = balance - amount;
-            const balanceResponse = await api.put('/api/user/balance', { balance: newBalance });
-            setBalance(balanceResponse.data.balance);
+            if (!selectedBankId) {
+                const newBalance = balance - amount;
+                const balanceResponse = await api.put('/api/user/balance', { balance: newBalance });
+                setBalance(balanceResponse.data.balance);
+            } else {
+                const bank = banks.find(b => b.id === selectedBankId);
+                if (bank) {
+                    const newBankBalance = bank.balance - amount;
+                    await api.put(`/api/banks/${bank.id}`, { ...bank, balance: newBankBalance });
+                    setBanks(prev => prev.map(b => b.id === bank.id ? { ...b, balance: newBankBalance } : b));
+                }
+            }
 
             toast.success(`Added ₱${amount.toLocaleString()} to ${item.name}!`);
             setIsAddFundsModalOpen(false);
@@ -126,6 +165,16 @@ export default function ItemDetailsPage({ params }: { params: Promise<{ id: stri
                     </div>
                 </section>
 
+                {/* Bank Info */}
+                <section className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
+                    <div className="flex items-center justify-between">
+                        <span className="text-sm text-gray-500 font-medium">Funding Source</span>
+                        <span className="text-sm font-bold text-slate-900">
+                            {item.bankId ? banks.find(b => b.id === item.bankId)?.name || 'Unknown Bank' : 'WishPay Wallet'}
+                        </span>
+                    </div>
+                </section>
+
                 {/* Priority Level Section */}
                 <section>
                     <h2 className="font-bold text-slate-900 mb-3 text-lg">Priority Level</h2>
@@ -141,39 +190,6 @@ export default function ItemDetailsPage({ params }: { params: Promise<{ id: stri
                         <div className={`flex-1 rounded-xl py-3 px-1 text-center flex flex-col justify-center items-center transition-all ${item.priority === 'low' ? 'bg-green-500 text-white shadow-lg shadow-green-500/40' : 'bg-gray-100 text-gray-400 opacity-50'}`}>
                             <span className="font-bold text-base leading-tight">Low</span>
                             <span className={`text-xs font-medium ${item.priority === 'low' ? 'text-green-100' : ''}`}>(Flexible)</span>
-                        </div>
-                    </div>
-                </section>
-
-                {/* Safeguards Section */}
-                <section>
-                    <h2 className="font-bold text-slate-900 mt-2 mb-3 text-lg">Safeguards</h2>
-                    <div className="space-y-3">
-                        <div className="flex items-center gap-3">
-                            <CheckCircle className="text-blue-600 text-xl w-6 h-6" />
-                            <div className="w-8 flex justify-center">
-                                <Shield className="text-green-500 text-lg w-5 h-5" />
-                            </div>
-                            <span className="text-slate-700 font-medium text-base">Emergency Fund Check</span>
-                        </div>
-                        <div className="flex items-center gap-3">
-                            <CheckCircle className="text-blue-600 text-xl w-6 h-6" />
-                            <div className="w-8 flex justify-center">
-                                <Lock className="text-blue-500 text-lg w-5 h-5" />
-                            </div>
-                            <span className="text-slate-700 font-medium text-base">Bill Buffer Protected</span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                                <CheckCircle className="text-blue-600 text-xl w-6 h-6" />
-                                <div className="w-8 flex justify-center">
-                                    <Activity className="text-blue-500 text-lg w-5 h-5" />
-                                </div>
-                                <span className="text-slate-700 font-medium text-base">Auto-Save Enabled</span>
-                            </div>
-                            <div className="w-12 h-7 bg-blue-600 rounded-full relative cursor-pointer shadow-inner">
-                                <div className="absolute right-1 top-1 bg-white w-5 h-5 rounded-full shadow-sm transition-transform"></div>
-                            </div>
                         </div>
                     </div>
                 </section>
@@ -205,6 +221,8 @@ export default function ItemDetailsPage({ params }: { params: Promise<{ id: stri
                 onSave={handleSaveItem}
                 activeTab={item.type}
                 itemToEdit={item}
+                banks={banks}
+                walletBalance={balance}
             />
 
             <AddFundsModal
@@ -215,6 +233,8 @@ export default function ItemDetailsPage({ params }: { params: Promise<{ id: stri
                 currentSaved={item.saved}
                 price={item.price}
                 walletBalance={balance}
+                banks={banks}
+                defaultBankId={item.bankId}
             />
         </div>
     );

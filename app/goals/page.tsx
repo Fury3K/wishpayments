@@ -3,10 +3,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Plus, ChevronLeft, UserCircle, Search } from 'lucide-react';
+import { Plus, ChevronLeft, UserCircle, Search, Flame, Zap, Leaf } from 'lucide-react';
 import api from '@/lib/api';
 import { toast } from 'react-hot-toast';
-import { Item, ItemType } from '../types';
+import { Item, ItemType, BankAccount } from '../types';
 import { BottomNav } from '../components/BottomNav';
 import { ItemModal } from '../components/AddItemModal';
 
@@ -14,6 +14,7 @@ export default function GoalsPage() {
     const router = useRouter();
     const [activeTab, setActiveTab] = useState<ItemType>('need');
     const [items, setItems] = useState<Item[]>([]);
+    const [banks, setBanks] = useState<BankAccount[]>([]);
     const [loadingItems, setLoadingItems] = useState(true);
     const [isItemModalOpen, setIsItemModalOpen] = useState(false);
     const [balance, setBalance] = useState(0);
@@ -22,14 +23,16 @@ export default function GoalsPage() {
     const fetchItems = useCallback(async () => {
         setLoadingItems(true);
         try {
-            const [itemsResponse, userBalanceResponse, profileResponse] = await Promise.all([
+            const [itemsResponse, userBalanceResponse, profileResponse, banksResponse] = await Promise.all([
                 api.get('/api/items'),
                 api.get('/api/user/balance'),
-                api.get('/api/user/profile')
+                api.get('/api/user/profile'),
+                api.get('/api/banks')
             ]);
             setItems(itemsResponse.data);
             setBalance(userBalanceResponse.data.balance || 0);
             setUserProfile(profileResponse.data);
+            setBanks(banksResponse.data);
         } catch (error: any) {
             if (error.response && error.response.status === 401) {
                 router.push('/login');
@@ -48,9 +51,19 @@ export default function GoalsPage() {
     const handleSaveItem = async (itemData: any) => {
         const price = parseFloat(itemData.price);
         let savedAmount = parseFloat(itemData.saved || '0');
-        
-        if (savedAmount > balance) {
-             toast.error("Not enough money in wallet for initial deposit!");
+        const bankId = itemData.bankId; // null (Wallet) or number (Bank ID)
+
+        // Determine current balance of the selected source
+        let currentSourceBalance = 0;
+        if (!bankId) {
+             currentSourceBalance = balance;
+        } else {
+             const bank = banks.find(b => b.id === bankId);
+             currentSourceBalance = bank?.balance || 0;
+        }
+
+        if (savedAmount > currentSourceBalance) {
+             toast.error("Not enough money in selected account for initial deposit!");
              return;
         }
 
@@ -61,6 +74,7 @@ export default function GoalsPage() {
                 saved: savedAmount,
                 type: itemData.type,
                 priority: itemData.priority,
+                bankId: bankId 
             };
             const itemResponse = await api.post('/api/items', newItemData);
             const createdItem: Item = itemResponse.data;
@@ -68,13 +82,43 @@ export default function GoalsPage() {
             setItems(prev => [createdItem, ...prev]);
 
             if (savedAmount > 0) {
-                const updatedBalanceResponse = await api.put('/api/user/balance', { balance: balance - savedAmount });
-                setBalance(updatedBalanceResponse.data.balance);
+                if (!bankId) {
+                    // Deduct from Wallet
+                    const updatedBalanceResponse = await api.put('/api/user/balance', { balance: balance - savedAmount });
+                    setBalance(updatedBalanceResponse.data.balance);
+                } else {
+                    // Deduct from Bank
+                    const bank = banks.find(b => b.id === bankId);
+                    if (bank) {
+                        const newBankBalance = bank.balance - savedAmount;
+                        await api.put(`/api/banks/${bank.id}`, { ...bank, balance: newBankBalance });
+                        
+                        // Update local banks state to reflect the deduction immediately
+                        setBanks(prev => prev.map(b => b.id === bank.id ? { ...b, balance: newBankBalance } : b));
+                    }
+                }
             }
             toast.success('Item added successfully!');
             setIsItemModalOpen(false);
         } catch (error: any) {
             toast.error(error.response?.data?.message || 'Failed to add item.');
+        }
+    };
+
+    const getBankColorClass = (bankId: number | null | undefined) => {
+        if (!bankId) return 'bg-blue-500'; // Wallet default
+        const bank = banks.find(b => b.id === bankId);
+        if (!bank) return 'bg-gray-400';
+        switch (bank.color) {
+            case 'purple': return 'bg-purple-500';
+            case 'green': return 'bg-emerald-500';
+            case 'orange': return 'bg-orange-500';
+            case 'red': return 'bg-red-500';
+            case 'pink': return 'bg-pink-500';
+            case 'cyan': return 'bg-cyan-500';
+            case 'yellow': return 'bg-yellow-400';
+            case 'black': return 'bg-gray-800';
+            case 'blue': default: return 'bg-blue-500';
         }
     };
 
@@ -118,13 +162,13 @@ export default function GoalsPage() {
                     <div className="bg-gray-100 p-1.5 rounded-full flex items-center mb-6">
                         <button 
                             onClick={() => setActiveTab('need')}
-                            className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold transition-all ${activeTab === 'need' ? 'bg-blue-500 text-white shadow-sm' : 'text-gray-500 hover:bg-gray-200'}`}
+                            className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-full text-sm font-semibold transition-all ${activeTab === 'need' ? 'bg-blue-500 text-white shadow-sm' : 'text-gray-500 hover:bg-gray-200'}`}
                         >
                             Needs
                         </button>
                         <button 
                             onClick={() => setActiveTab('want')}
-                            className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold transition-all ${activeTab === 'want' ? 'bg-blue-500 text-white shadow-sm' : 'text-gray-500 hover:bg-gray-200'}`}
+                            className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-full text-sm font-semibold transition-all ${activeTab === 'want' ? 'bg-blue-500 text-white shadow-sm' : 'text-gray-500 hover:bg-gray-200'}`}
                         >
                             Wants
                         </button>
@@ -145,32 +189,40 @@ export default function GoalsPage() {
                     <ul className="space-y-4">
                         {items.filter(i => i.type === activeTab).map((item) => (
                             <li key={item.id} className="block w-full">
-                                {/* Ensure Link wraps the entire clickable area properly */}
                                 <Link 
                                     href={`/items/${item.id}`} 
-                                    className="flex items-center justify-between p-3 -mx-3 rounded-xl hover:bg-gray-50 transition-colors group cursor-pointer w-full"
+                                    className="flex items-center justify-between p-4 -mx-3 rounded-2xl hover:bg-gray-50 transition-all duration-200 group cursor-pointer w-full border border-transparent hover:border-gray-100 hover:shadow-sm relative overflow-hidden"
                                 >
-                                    <div className="flex items-center gap-4">
-                                        <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-xs shadow-md shrink-0
-                                            ${item.priority === 'high' ? 'bg-red-500 shadow-red-500/30' : 
-                                              item.priority === 'medium' ? 'bg-purple-500 shadow-purple-500/30' : 
-                                              'bg-green-400 shadow-green-400/30'}`}
+                                    {/* Bank Color Indicator Strip */}
+                                    <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${getBankColorClass(item.bankId)}`}></div>
+                                    
+                                    <div className="flex items-center gap-4 ml-2">
+                                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-white shadow-md shrink-0 transition-transform group-hover:scale-105
+                                            ${item.priority === 'high' ? 'bg-gradient-to-br from-red-500 to-red-600 shadow-red-500/30' : 
+                                              item.priority === 'medium' ? 'bg-gradient-to-br from-purple-500 to-purple-600 shadow-purple-500/30' : 
+                                              'bg-gradient-to-br from-emerald-400 to-emerald-600 shadow-emerald-400/30'}`}
                                         >
-                                            {item.priority === 'high' ? 'HI' : item.priority === 'medium' ? 'MD' : 'LO'}
+                                            {item.priority === 'high' && <Flame className="w-6 h-6 fill-white/20" />}
+                                            {item.priority === 'medium' && <Zap className="w-6 h-6 fill-white/20" />}
+                                            {item.priority === 'low' && <Leaf className="w-6 h-6 fill-white/20" />}
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                            <span className="block text-base font-medium text-gray-700 group-hover:text-blue-600 transition-colors truncate">{item.name}</span>
-                                            <div className="w-full max-w-[100px] h-1.5 bg-gray-100 rounded-full mt-1.5 overflow-hidden">
+                                            <span className="block text-lg font-bold text-gray-800 group-hover:text-blue-600 transition-colors truncate mb-1">{item.name}</span>
+                                            <div className="w-full max-w-[140px] h-2 bg-gray-100 rounded-full overflow-hidden">
                                                 <div 
-                                                    className="h-full bg-blue-500 rounded-full" 
+                                                    className={`h-full rounded-full transition-all duration-500 ${
+                                                        (item.saved / item.price) >= 1 ? 'bg-green-500' : 'bg-blue-500'
+                                                    }`} 
                                                     style={{ width: `${Math.min((item.saved / item.price) * 100, 100)}%` }}
                                                 ></div>
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="text-right shrink-0">
-                                        <span className="block text-base font-extrabold text-[#1A1B2D]">₱{item.saved.toLocaleString()}</span>
-                                        <span className="text-xs text-gray-400">of ₱{item.price.toLocaleString()}</span>
+                                    <div className="text-right shrink-0 flex flex-col items-end">
+                                        <div className="flex items-center gap-1.5">
+                                            <span className="block text-lg font-extrabold text-[#1A1B2D]">₱{item.saved.toLocaleString()}</span>
+                                        </div>
+                                        <span className="text-xs font-medium text-gray-400">of ₱{item.price.toLocaleString()}</span>
                                     </div>
                                 </Link>
                             </li>
@@ -196,7 +248,9 @@ export default function GoalsPage() {
                 onClose={() => setIsItemModalOpen(false)}
                 onSave={handleSaveItem}
                 activeTab={activeTab}
-                itemToEdit={null} 
+                itemToEdit={null}
+                banks={banks}
+                walletBalance={balance}
             />
         </div>
     );

@@ -40,3 +40,6 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 /redesign/*
+
+GEMINI.md
+/GEMINI.md

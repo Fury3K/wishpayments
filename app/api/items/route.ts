@@ -50,7 +50,7 @@ export async function POST(req: Request) {
       return addCorsHeaders(NextResponse.json({ message: 'Unauthorized' }, { status: 401 }));
     }
 
-    const { name, price, saved, type, priority } = await req.json();
+    const { name, price, saved, type, priority, bankId } = await req.json();
 
     if (!name || !price || !type || !priority) {
       return addCorsHeaders(NextResponse.json({ message: 'Missing required fields' }, { status: 400 }));
@@ -63,6 +63,7 @@ export async function POST(req: Request) {
       saved: parseInt(saved || '0'),
       type,
       priority,
+      bankId: bankId ? parseInt(bankId) : null,
     }).returning();
 
     return addCorsHeaders(NextResponse.json(newItem, { status: 201 }));

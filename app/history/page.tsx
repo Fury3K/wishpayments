@@ -2,51 +2,68 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, ArrowUpDown, Coffee, ShoppingCart, CreditCard, Bus, Gift, Search, Filter, ChevronLeft } from 'lucide-react';
+import { ArrowLeft, ArrowUpDown, Coffee, ShoppingCart, CreditCard, Bus, Gift, Search, Filter, ChevronLeft, Wallet } from 'lucide-react';
 import api from '@/lib/api';
-import { Item } from '../types';
+import { Item, BankAccount } from '../types';
 import { BottomNav } from '../components/BottomNav';
 import Link from 'next/link';
 
 export default function HistoryPage() {
     const router = useRouter();
     const [filter, setFilter] = useState<'all' | 'need' | 'want'>('all');
+    const [bankFilter, setBankFilter] = useState<string>('all');
     const [items, setItems] = useState<Item[]>([]);
+    const [banks, setBanks] = useState<BankAccount[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const fetchHistory = async () => {
+        const fetchData = async () => {
             try {
-                const response = await api.get('/api/items?status=archived');
-                setItems(response.data);
+                const [itemsRes, banksRes] = await Promise.all([
+                    api.get('/api/items?status=archived'),
+                    api.get('/api/banks')
+                ]);
+                setItems(itemsRes.data);
+                setBanks(banksRes.data);
             } catch (error) {
-                console.error('Failed to fetch history:', error);
+                console.error('Failed to fetch data:', error);
             } finally {
                 setLoading(false);
             }
         };
 
-        fetchHistory();
+        fetchData();
     }, []);
 
     const filteredItems = useMemo(() => {
-        if (filter === 'all') return items;
-        return items.filter(item => item.type === filter);
-    }, [items, filter]);
+        let res = items;
+        // Filter by Type
+        if (filter !== 'all') {
+            res = res.filter(item => item.type === filter);
+        }
+        // Filter by Bank Source
+        if (bankFilter !== 'all') {
+            if (bankFilter === 'wallet') {
+                res = res.filter(item => !item.bankId);
+            } else {
+                res = res.filter(item => item.bankId === parseInt(bankFilter));
+            }
+        }
+        return res;
+    }, [items, filter, bankFilter]);
 
     const totalSpending = useMemo(() => {
-        // Only count items where saved >= price (Bought)
-        const boughtItems = items.filter(i => i.saved >= i.price);
+        const boughtItems = filteredItems.filter(i => i.saved >= i.price);
         return boughtItems.reduce((acc, curr) => acc + curr.price, 0);
-    }, [items]);
+    }, [filteredItems]);
 
     const needsPercentage = useMemo(() => {
         if (totalSpending === 0) return 0;
-        const needsSpent = items
+        const needsSpent = filteredItems
             .filter(i => i.type === 'need' && i.saved >= i.price)
             .reduce((acc, curr) => acc + curr.price, 0);
         return Math.round((needsSpent / totalSpending) * 100);
-    }, [items, totalSpending]);
+    }, [filteredItems, totalSpending]);
 
     const groupedItems = useMemo(() => {
         const groups: { [key: string]: Item[] } = {};
@@ -56,17 +73,16 @@ export default function HistoryPage() {
             const date = new Date(item.dateArchived).toLocaleDateString('en-US', {
                 month: 'long',
                 day: 'numeric',
-                year: 'numeric' // Added year to ensure correct grouping across years
+                year: 'numeric'
             });
             
-            // Format to "Today" or "Yesterday" if applicable
             const today = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
             const yesterdayDate = new Date();
             yesterdayDate.setDate(yesterdayDate.getDate() - 1);
             const yesterday = yesterdayDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
 
             let displayDate = date;
-            if (date === today) displayDate = `Today, ${date.split(',')[0]}`; // approximate formatting
+            if (date === today) displayDate = `Today, ${date.split(',')[0]}`;
             else if (date === yesterday) displayDate = `Yesterday, ${date.split(',')[0]}`;
 
             if (!groups[displayDate]) {
@@ -75,10 +91,7 @@ export default function HistoryPage() {
             groups[displayDate].push(item);
         });
 
-        // Sort groups by date (descending) is tricky with strings, but the API usually returns sorted or we can sort keys.
-        // For simplicity, we'll rely on object key order (not guaranteed) or sort keys manually.
         const sortedKeys = Object.keys(groups).sort((a, b) => {
-             // Basic date parsing for sorting
              const dateA = new Date(a.replace('Today, ', '').replace('Yesterday, ', ''));
              const dateB = new Date(b.replace('Today, ', '').replace('Yesterday, ', ''));
              return dateB.getTime() - dateA.getTime();
@@ -90,6 +103,23 @@ export default function HistoryPage() {
         }, {} as { [key: string]: Item[] });
 
     }, [filteredItems]);
+
+    const getBankColorClass = (bankId: number | null | undefined) => {
+        if (!bankId) return 'bg-blue-500'; // Wallet default
+        const bank = banks.find(b => b.id === bankId);
+        if (!bank) return 'bg-gray-400';
+        switch (bank.color) {
+            case 'purple': return 'bg-purple-500';
+            case 'green': return 'bg-emerald-500';
+            case 'orange': return 'bg-orange-500';
+            case 'red': return 'bg-red-500';
+            case 'pink': return 'bg-pink-500';
+            case 'cyan': return 'bg-cyan-500';
+            case 'yellow': return 'bg-yellow-400';
+            case 'black': return 'bg-gray-800';
+            case 'blue': default: return 'bg-blue-500';
+        }
+    };
 
     if (loading) {
         return <div className="min-h-screen flex justify-center items-center bg-slate-50"><span className="loading loading-spinner loading-lg text-blue-600"></span></div>;
@@ -109,13 +139,13 @@ export default function HistoryPage() {
             </header>
 
             <main className="px-4 pb-24 w-full max-w-md mx-auto flex-1">
-                {/* Filter Tabs */}
-                <nav aria-label="Transaction Filters" className="flex items-center gap-2 overflow-x-auto no-scrollbar bg-white p-1 rounded-full shadow-sm mb-6">
+                {/* Type Filter Tabs */}
+                <nav aria-label="Transaction Type Filters" className="flex items-center gap-2 overflow-x-auto no-scrollbar bg-white p-1 rounded-full shadow-sm mb-4">
                     <button 
                         onClick={() => setFilter('all')}
                         className={`flex-none px-6 py-1.5 rounded-full text-sm font-medium transition-all ${filter === 'all' ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-500 hover:bg-gray-50'}`}
                     >
-                        All
+                        All Types
                     </button>
                     <button 
                         onClick={() => setFilter('need')}
@@ -130,6 +160,32 @@ export default function HistoryPage() {
                         Wants
                     </button>
                 </nav>
+
+                {/* Bank Source Filter */}
+                <div className="mb-6 flex gap-2 overflow-x-auto no-scrollbar pb-1">
+                     <button
+                        onClick={() => setBankFilter('all')}
+                        className={`flex-shrink-0 px-4 py-1.5 rounded-xl text-xs font-semibold border transition-colors ${bankFilter === 'all' ? 'bg-gray-800 text-white border-gray-800' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'}`}
+                    >
+                        All Sources
+                    </button>
+                    <button
+                        onClick={() => setBankFilter('wallet')}
+                        className={`flex-shrink-0 px-4 py-1.5 rounded-xl text-xs font-semibold border transition-colors flex items-center gap-1 ${bankFilter === 'wallet' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'}`}
+                    >
+                        <Wallet className="w-3 h-3" /> Wallet
+                    </button>
+                    {banks.map(bank => (
+                        <button
+                            key={bank.id}
+                            onClick={() => setBankFilter(bank.id.toString())}
+                            className={`flex-shrink-0 px-4 py-1.5 rounded-xl text-xs font-semibold border transition-colors flex items-center gap-1 ${bankFilter === bank.id.toString() ? 'bg-gray-800 text-white border-gray-800' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'}`}
+                        >
+                            <span className={`w-2 h-2 rounded-full ${getBankColorClass(bank.id)}`}></span>
+                            {bank.name}
+                        </button>
+                    ))}
+                </div>
 
                 {/* Summary Card */}
                 <section className="bg-white rounded-3xl p-5 shadow-sm mb-6">
@@ -160,8 +216,11 @@ export default function HistoryPage() {
                             <h2 className="text-sm font-semibold text-gray-800 mb-3 ml-1">{date}</h2>
                             <div className="">
                                 {group.map(item => (
-                                    <article key={item.id} className="flex items-center justify-between p-4 bg-white rounded-2xl mb-3 shadow-sm">
-                                        <div className="flex items-center space-x-4">
+                                    <article key={item.id} className="flex items-center justify-between p-4 bg-white rounded-2xl mb-3 shadow-sm relative overflow-hidden">
+                                        {/* Bank Color Strip */}
+                                        <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${getBankColorClass(item.bankId)}`}></div>
+
+                                        <div className="flex items-center space-x-4 ml-2">
                                             <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center flex-shrink-0">
                                                 {item.type === 'need' ? (
                                                     <CreditCard className="text-slate-600 w-5 h-5" />
@@ -173,6 +232,9 @@ export default function HistoryPage() {
                                                 <h3 className="font-medium text-gray-900 text-sm">{item.name}</h3>
                                                 <p className="text-xs text-gray-400 mt-0.5">
                                                     {new Date(item.dateArchived || '').toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                </p>
+                                                <p className="text-[10px] text-gray-400 font-medium">
+                                                    {item.bankId ? banks.find(b => b.id === item.bankId)?.name || 'Unknown Bank' : 'WishPay Wallet'}
                                                 </p>
                                             </div>
                                         </div>

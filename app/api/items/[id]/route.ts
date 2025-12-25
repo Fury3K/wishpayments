@@ -61,7 +61,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       return addCorsHeaders(NextResponse.json({ message: 'Invalid item ID' }, { status: 400 }));
     }
 
-    const { name, price, saved, type, priority } = await req.json();
+    const { name, price, saved, type, priority, bankId } = await req.json();
 
     if (!name || !price || !type || !priority) {
       return addCorsHeaders(NextResponse.json({ message: 'Missing required fields' }, { status: 400 }));
@@ -74,6 +74,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
         saved: parseInt(saved || '0'),
         type,
         priority,
+        bankId: bankId === undefined ? undefined : (bankId ? parseInt(bankId) : null),
       })
       .where(and(eq(items.id, itemId), eq(items.userId, userId)))
       .returning();

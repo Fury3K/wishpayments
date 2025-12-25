@@ -26,6 +26,7 @@ export const items = pgTable('items', {
   dateAdded: timestamp('date_added').defaultNow().notNull(),
   isArchived: boolean('is_archived').default(false).notNull(),
   dateArchived: timestamp('date_archived'),
+  bankId: integer('bank_id').references(() => bankAccounts.id),
 });
 
 export const bankAccounts = pgTable('bank_accounts', {
