@@ -24,10 +24,6 @@ export const metadata: Metadata = {
     title: "WishPay",
     statusBarStyle: "default",
   },
-  icons: {
-    icon: "/icon.png",
-    apple: "/icon.png",
-  },
 };
 
 export const viewport = {
