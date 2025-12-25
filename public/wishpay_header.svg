@@ -1,0 +1,19 @@
+<svg width="800" height="240" viewBox="0 0 200 60" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <style>
+      .text-base { font-family: 'Helvetica Neue', Arial, sans-serif; font-weight: bold; font-size: 36px; }
+      .color-needs { fill: #1B4F72; } /* Dark Blue */
+      .color-wants { fill: #C4A46D; } /* Gold/Beige */
+    </style>
+  </defs>
+
+  <g transform="translate(20, 15)">
+    <path d="M5,0 L12,28 L20,6 L28,28 L35,0 L42,0 L31,34 L20,12 L9,34 L-2,0 Z" class="color-needs"/>
+    
+    <path d="M12,28 C12,28 10,10 25,-4 L28,2 C18,10 17,24 17,24 Z" class="color-wants"/>
+  </g>
+
+  <text x="65" y="44" class="text-base color-needs">ish</text>
+
+  <text x="118" y="44" class="text-base color-wants">Pay</text>
+</svg>

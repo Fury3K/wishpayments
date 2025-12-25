@@ -13,6 +13,7 @@ import { AddBankModal } from '../components/modals/AddBankModal';
 import { EditBankModal } from '../components/modals/EditBankModal';
 import { TransferModal } from '../components/modals/TransferModal';
 import { BankCard } from '../components/BankCard';
+import { useDraggableScroll } from '../hooks/useDraggableScroll';
 
 interface BankAccount {
     id: number;
@@ -25,12 +26,13 @@ export default function Dashboard() {
     const router = useRouter();
     const [items, setItems] = useState<Item[]>([]);
     const [walletBalance, setWalletBalance] = useState(0);
+    const [isWalletHidden, setIsWalletHidden] = useState(false);
     const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([]);
     const [loading, setLoading] = useState(true);
     const [userProfile, setUserProfile] = useState<{ name: string; email: string; profilePicture?: string } | null>(null);
     
     // Carousel State
-    const scrollContainerRef = useRef<HTMLDivElement>(null);
+    const { ref: scrollContainerRef, events: scrollEvents } = useDraggableScroll();
     const [activeCardIndex, setActiveCardIndex] = useState(0);
     
     // Modals
@@ -56,6 +58,7 @@ export default function Dashboard() {
             
             setItems(itemsRes.data);
             setWalletBalance(balanceRes.data.balance || 0);
+            setIsWalletHidden(balanceRes.data.isWalletHidden || false);
             setBankAccounts(banksRes.data);
             setUserProfile(profileRes.data);
         } catch (error: any) {
@@ -102,7 +105,36 @@ export default function Dashboard() {
         }
     };
 
-    const handleUpdateBank = async (id: number, bankData: any) => {
+    const handleUpdateBank = async (id: number | string, bankData: any) => {
+        if (id === 'wallet') {
+            try {
+                const newBalance = parseFloat(bankData.balance);
+                const diff = newBalance - walletBalance;
+                const updatePayload: any = { isWalletHidden: bankData.isHidden };
+
+                if (diff !== 0) {
+                    updatePayload.balance = newBalance;
+                    updatePayload.transaction = {
+                        amount: Math.abs(diff),
+                        type: diff > 0 ? 'deposit' : 'withdrawal',
+                        description: 'Manual Balance Adjustment'
+                    };
+                }
+
+                const res = await api.put('/api/user/balance', updatePayload);
+                
+                if (diff !== 0) setWalletBalance(newBalance);
+                setIsWalletHidden(res.data.isWalletHidden);
+                
+                toast.success('Wallet updated!');
+                setIsEditBankModalOpen(false);
+                setBankToEdit(null);
+            } catch (error: any) {
+                toast.error('Failed to update wallet.');
+            }
+            return;
+        }
+
         try {
             const response = await api.put(`/api/banks/${id}`, bankData);
             setBankAccounts(prev => prev.map(b => b.id === id ? response.data : b));
@@ -114,7 +146,11 @@ export default function Dashboard() {
         }
     };
 
-    const handleDeleteBank = async (id: number) => {
+    const handleDeleteBank = async (id: number | string) => {
+        if (id === 'wallet') {
+            toast.error('Cannot delete main wallet.');
+            return;
+        }
         try {
             await api.delete(`/api/banks/${id}`);
             setBankAccounts(prev => prev.filter(b => b.id !== id));
@@ -275,18 +311,22 @@ export default function Dashboard() {
                     <div 
                         ref={scrollContainerRef}
                         onScroll={handleScroll}
-                        className="flex overflow-x-auto snap-x snap-mandatory px-6 pb-6 gap-4 no-scrollbar items-start"
+                        {...scrollEvents}
+                        className="flex overflow-x-auto snap-x snap-mandatory px-6 pb-6 gap-4 no-scrollbar items-start cursor-grab"
                     >
-                        {/* Main Wallet Card */}
-                        <div className="min-w-full snap-center shrink-0">
-                            <BankCard 
-                                name="WishPay Wallet"
-                                balance={walletBalance}
-                                color="blue"
-                                onCashIn={() => openCashIn('wallet')}
-                                onCashOut={() => openCashOut('wallet')}
-                            />
-                        </div>
+                        {/* Main Wallet Card - Only show if not hidden */}
+                        {!isWalletHidden && (
+                            <div className="min-w-full snap-center shrink-0">
+                                <BankCard 
+                                    name="WishPay Wallet"
+                                    balance={walletBalance}
+                                    color="blue"
+                                    onCashIn={() => openCashIn('wallet')}
+                                    onCashOut={() => openCashOut('wallet')}
+                                    onEdit={() => openEditBank({ id: 'wallet', name: 'WishPay Wallet', balance: walletBalance, color: 'blue', isWalletHidden } as any)}
+                                />
+                            </div>
+                        )}
 
                         {/* Additional Bank Cards */}
                         {bankAccounts.map((bank) => (
@@ -305,13 +345,18 @@ export default function Dashboard() {
                     
                     {/* Pagination Dots */}
                     <div className="flex justify-center gap-1.5 -mt-2 mb-4">
-                        <div className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${activeCardIndex === 0 ? 'bg-blue-600 w-4' : 'bg-gray-300'}`}></div>
-                        {bankAccounts.map((b, idx) => (
-                            <div 
-                                key={b.id} 
-                                className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${activeCardIndex === idx + 1 ? 'bg-blue-600 w-4' : 'bg-gray-300'}`}
-                            ></div>
-                        ))}
+                        {!isWalletHidden && (
+                            <div className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${activeCardIndex === 0 ? 'bg-blue-600 w-4' : 'bg-gray-300'}`}></div>
+                        )}
+                        {bankAccounts.map((b, idx) => {
+                            const effectiveIndex = isWalletHidden ? idx : idx + 1;
+                            return (
+                                <div 
+                                    key={b.id} 
+                                    className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${activeCardIndex === effectiveIndex ? 'bg-blue-600 w-4' : 'bg-gray-300'}`}
+                                ></div>
+                            );
+                        })}
                     </div>
                 </section>
 
@@ -337,7 +382,7 @@ export default function Dashboard() {
 
                     {/* Bank Accounts List */}
                     <section className="bg-white rounded-3xl p-6 shadow-[0_10px_30px_-5px_rgba(0,0,0,0.03)]">
-                        <div className="flex items-center justify-between mb-5 mt-2">
+                        <div className="flex flex-wrap items-center justify-between mb-5 mt-2 gap-3">
                              <h3 className="font-bold text-lg text-[#1A1B2D]">Bank Accounts</h3>
                              <div className="flex items-center">
                                  <button 
@@ -356,13 +401,19 @@ export default function Dashboard() {
                         </div>
                         <ul className="space-y-6">
                              {/* WishPay Wallet */}
-                            <li className="flex items-center justify-between">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-3 h-3 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.6)]"></div>
-                                    <span className="text-base font-medium text-gray-700">WishPay Wallet</span>
-                                </div>
-                                <span className="text-base font-extrabold text-[#1A1B2D]">₱{walletBalance.toLocaleString()}</span>
-                            </li>
+                            {!isWalletHidden && (
+                                <li 
+                                    className="flex items-center justify-between cursor-pointer hover:bg-gray-50 p-2 -mx-2 rounded-lg transition-colors"
+                                    onClick={() => openEditBank({ id: 'wallet', name: 'WishPay Wallet', balance: walletBalance, color: 'blue', isWalletHidden } as any)}
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-3 h-3 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.6)]"></div>
+                                        <span className="text-base font-medium text-gray-700">WishPay Wallet</span>
+                                    </div>
+                                    <span className="text-base font-extrabold text-[#1A1B2D]">₱{walletBalance.toLocaleString()}</span>
+                                </li>
+                            )}
+
                             {/* Dynamically Added Banks */}
                             {bankAccounts.map((bank) => {
                                 const getIndicatorClass = (color: string) => {
@@ -389,10 +440,21 @@ export default function Dashboard() {
                                     </li>
                                 );
                             })}
-                            {bankAccounts.length === 0 && (
-                                <li className="text-center text-gray-400 py-2 text-sm">No additional banks added yet.</li>
+                            {bankAccounts.length === 0 && !(!isWalletHidden) && (
+                                <li className="text-center text-gray-400 py-2 text-sm">No active bank accounts.</li>
                             )}
                         </ul>
+
+                        {isWalletHidden && (
+                            <div className="mt-6 pt-4 border-t border-gray-100 flex justify-center">
+                                <button 
+                                    onClick={() => openEditBank({ id: 'wallet', name: 'WishPay Wallet', balance: walletBalance, color: 'blue', isWalletHidden } as any)}
+                                    className="text-xs font-medium text-gray-400 hover:text-indigo-600 flex items-center gap-1 transition-colors"
+                                >
+                                    <Settings className="w-3 h-3" /> Manage Hidden Wallets
+                                </button>
+                            </div>
+                        )}
                     </section>
                 </div>
             </main>
@@ -429,6 +491,7 @@ export default function Dashboard() {
                 onConfirm={handleTransfer}
                 walletBalance={walletBalance}
                 banks={bankAccounts}
+                isWalletHidden={isWalletHidden}
             />
         </div>
     );

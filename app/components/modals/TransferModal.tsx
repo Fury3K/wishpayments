@@ -10,6 +10,7 @@ interface TransferModalProps {
     onConfirm: (sourceId: string, destId: string, amount: number) => void;
     walletBalance: number;
     banks: BankAccount[];
+    isWalletHidden?: boolean;
 }
 
 export function TransferModal({ 
@@ -17,7 +18,8 @@ export function TransferModal({
     onClose, 
     onConfirm, 
     walletBalance, 
-    banks 
+    banks,
+    isWalletHidden = false
 }: TransferModalProps) {
     const [amount, setAmount] = useState('');
     const [sourceId, setSourceId] = useState<string>('wallet');
@@ -26,11 +28,23 @@ export function TransferModal({
     useEffect(() => {
         if (isOpen) {
             setAmount('');
-            setSourceId('wallet');
-            // Default dest to first bank if available, else empty
-            setDestId(banks.length > 0 ? banks[0].id.toString() : '');
+            if (isWalletHidden) {
+                // If wallet is hidden, default to first bank
+                if (banks.length > 0) {
+                    setSourceId(banks[0].id.toString());
+                    // Set dest to second bank if available, else empty
+                    setDestId(banks.length > 1 ? banks[1].id.toString() : '');
+                } else {
+                     setSourceId('');
+                     setDestId('');
+                }
+            } else {
+                setSourceId('wallet');
+                // Default dest to first bank if available, else empty
+                setDestId(banks.length > 0 ? banks[0].id.toString() : '');
+            }
         }
-    }, [isOpen, banks]);
+    }, [isOpen, banks, isWalletHidden]);
 
     if (!isOpen) return null;
 
@@ -97,11 +111,21 @@ export function TransferModal({
                                 onChange={e => {
                                     setSourceId(e.target.value);
                                     if (e.target.value === destId) {
-                                        setDestId(e.target.value === 'wallet' ? (banks[0]?.id.toString() || '') : 'wallet');
+                                        // Pick a new destination that isn't the source
+                                        if (e.target.value === 'wallet') {
+                                             setDestId(banks[0]?.id.toString() || '');
+                                        } else {
+                                            if (!isWalletHidden) {
+                                                setDestId('wallet');
+                                            } else {
+                                                const nextBank = banks.find(b => b.id.toString() !== e.target.value);
+                                                setDestId(nextBank ? nextBank.id.toString() : '');
+                                            }
+                                        }
                                     }
                                 }}
                             >
-                                <option value="wallet">WishPay Wallet</option>
+                                {!isWalletHidden && <option value="wallet">WishPay Wallet</option>}
                                 {banks.map(bank => (
                                     <option key={bank.id} value={bank.id}>{bank.name}</option>
                                 ))}
@@ -124,7 +148,7 @@ export function TransferModal({
                                 value={destId}
                                 onChange={e => setDestId(e.target.value)}
                             >
-                                <option value="wallet" disabled={sourceId === 'wallet'}>WishPay Wallet</option>
+                                {!isWalletHidden && <option value="wallet" disabled={sourceId === 'wallet'}>WishPay Wallet</option>}
                                 {banks.map(bank => (
                                     <option key={bank.id} value={bank.id} disabled={sourceId === bank.id.toString()}>{bank.name}</option>
                                 ))}

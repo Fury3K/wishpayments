@@ -28,9 +28,8 @@ export const Navbar = ({ showProfile = true, onLogout }: { showProfile?: boolean
     if (!mounted) {
         return (
             <header className="flex justify-between items-center px-6 py-5 bg-white z-20 relative">
-                <div className="flex items-center text-2xl font-bold tracking-tight">
-                    <span style={{ color: '#103B6D', fontWeight: 'bold' }}>Wish</span>
-                    <span style={{ color: '#C5A059', fontWeight: 'bold' }}>Pay</span>
+                <div className="flex items-center">
+                    <img src="/wishpay_header.svg" alt="WishPay Logo" className="h-8 w-auto" />
                 </div>
             </header>
         );
@@ -38,10 +37,9 @@ export const Navbar = ({ showProfile = true, onLogout }: { showProfile?: boolean
 
     return (
         <header className="flex justify-between items-center px-6 py-5 bg-white z-20 relative border-b border-gray-100 shadow-sm">
-            <div className="flex items-center text-2xl font-bold tracking-tight">
+            <div className="flex items-center">
                 <Link href={showProfile ? "/dashboard" : "/"} className="flex items-center">
-                    <span style={{ color: '#103B6D', fontWeight: 'bold' }}>Wish</span>
-                    <span style={{ color: '#C5A059', fontWeight: 'bold' }}>Pay</span>
+                    <img src="/wishpay_header.svg" alt="WishPay Logo" className="h-8 w-auto" />
                 </Link>
             </div>
             

@@ -15,6 +15,7 @@ export function EditBankModal({ isOpen, onClose, onSave, onDelete, bankToEdit }:
     const [name, setName] = useState('');
     const [color, setColor] = useState('blue');
     const [balance, setBalance] = useState('');
+    const [isHidden, setIsHidden] = useState(false);
 
     const colors = [
         { id: 'blue', value: 'from-[#1c3d9c] to-[#3b6ce3]', label: 'Ocean' },
@@ -33,6 +34,7 @@ export function EditBankModal({ isOpen, onClose, onSave, onDelete, bankToEdit }:
             setName(bankToEdit.name);
             setColor(bankToEdit.color);
             setBalance(bankToEdit.balance.toString());
+            setIsHidden(bankToEdit.isWalletHidden || false);
         }
     }, [isOpen, bankToEdit]);
 
@@ -40,7 +42,7 @@ export function EditBankModal({ isOpen, onClose, onSave, onDelete, bankToEdit }:
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        onSave(bankToEdit.id, { name, color, balance });
+        onSave(bankToEdit.id, { name, color, balance, isHidden });
         onClose();
     };
 
@@ -110,6 +112,21 @@ export function EditBankModal({ isOpen, onClose, onSave, onDelete, bankToEdit }:
                         </div>
                     </div>
 
+                    {bankToEdit?.id === 'wallet' && (
+                        <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-xl border border-gray-100">
+                            <input
+                                type="checkbox"
+                                id="isHidden"
+                                checked={isHidden}
+                                onChange={(e) => setIsHidden(e.target.checked)}
+                                className="w-5 h-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                            />
+                            <label htmlFor="isHidden" className="text-sm font-medium text-gray-700 select-none cursor-pointer">
+                                Hide WishPay Wallet from dashboard
+                            </label>
+                        </div>
+                    )}
+
                     <div className="pt-2 space-y-3">
                         <button
                             type="submit"
@@ -118,13 +135,15 @@ export function EditBankModal({ isOpen, onClose, onSave, onDelete, bankToEdit }:
                             Save Changes <Check className="w-5 h-5" />
                         </button>
                         
-                        <button
-                            type="button"
-                            onClick={handleDelete}
-                            className="w-full py-4 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 font-bold text-lg transition-all flex items-center justify-center gap-2"
-                        >
-                            Remove Account <Trash2 className="w-5 h-5" />
-                        </button>
+                        {bankToEdit?.id !== 'wallet' && (
+                            <button
+                                type="button"
+                                onClick={handleDelete}
+                                className="w-full py-4 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 font-bold text-lg transition-all flex items-center justify-center gap-2"
+                            >
+                                Remove Account <Trash2 className="w-5 h-5" />
+                            </button>
+                        )}
                     </div>
                 </form>
             </div>

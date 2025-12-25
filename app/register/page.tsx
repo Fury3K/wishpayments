@@ -46,7 +46,7 @@ export default function RegisterPage() {
                             </svg>
                         </div>
                         <div className="flex flex-col items-center">
-                            <h2 className="text-2xl font-bold tracking-tight text-[#103B6D]">Wish<span className="text-[#C5A059]">Pay</span></h2>
+                            <img src="/wishpay_header.svg" alt="WishPay Logo" className="h-8 w-auto" />
                         </div>
                     </div>
                     <h1 className="font-bold text-slate-900 mb-2 text-center text-[28px]">

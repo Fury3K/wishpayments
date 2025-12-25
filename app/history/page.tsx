@@ -7,11 +7,12 @@ import api from '@/lib/api';
 import { Item, BankAccount } from '../types';
 import { BottomNav } from '../components/BottomNav';
 import Link from 'next/link';
+import { useDraggableScroll } from '../hooks/useDraggableScroll';
 
 interface Transaction {
     id: number;
     amount: number;
-    type: 'deposit' | 'withdrawal' | 'allocation' | 'reversal';
+    type: 'deposit' | 'withdrawal' | 'allocation' | 'reversal' | 'transfer';
     description: string;
     bankId: number | null;
     itemId: number | null;
@@ -20,24 +21,30 @@ interface Transaction {
 
 export default function HistoryPage() {
     const router = useRouter();
-    const [filter, setFilter] = useState<'all' | 'need' | 'want' | 'cash-flow'>('all');
+    const [filter, setFilter] = useState<'all' | 'need' | 'want' | 'cash-flow' | 'everything'>('everything');
     const [bankFilter, setBankFilter] = useState<string>('all');
     const [items, setItems] = useState<Item[]>([]);
     const [transactions, setTransactions] = useState<Transaction[]>([]);
     const [banks, setBanks] = useState<BankAccount[]>([]);
+    const [isWalletHidden, setIsWalletHidden] = useState(false);
     const [loading, setLoading] = useState(true);
+
+    const { ref: typeFilterRef, events: typeFilterEvents } = useDraggableScroll();
+    const { ref: bankFilterRef, events: bankFilterEvents } = useDraggableScroll();
 
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const [itemsRes, banksRes, txRes] = await Promise.all([
+                const [itemsRes, banksRes, txRes, userRes] = await Promise.all([
                     api.get('/api/items?status=archived'),
                     api.get('/api/banks'),
-                    api.get('/api/transactions')
+                    api.get('/api/transactions'),
+                    api.get('/api/user/balance')
                 ]);
                 setItems(itemsRes.data);
                 setBanks(banksRes.data);
                 setTransactions(txRes.data);
+                setIsWalletHidden(userRes.data.isWalletHidden || false);
             } catch (error) {
                 console.error('Failed to fetch data:', error);
             } finally {
@@ -50,6 +57,11 @@ export default function HistoryPage() {
 
     const filteredItems = useMemo(() => {
         let res = items;
+        // Filter out wallet items if hidden
+        if (isWalletHidden) {
+            res = res.filter(item => item.bankId);
+        }
+
         // Filter by Type
         if (filter !== 'all' && filter !== 'cash-flow') {
             res = res.filter(item => item.type === filter);
@@ -63,10 +75,15 @@ export default function HistoryPage() {
             }
         }
         return res;
-    }, [items, filter, bankFilter]);
+    }, [items, filter, bankFilter, isWalletHidden]);
 
     const filteredTransactions = useMemo(() => {
         let res = transactions;
+        // Filter out wallet transactions if hidden
+        if (isWalletHidden) {
+            res = res.filter(tx => tx.bankId);
+        }
+
         if (bankFilter !== 'all') {
             if (bankFilter === 'wallet') {
                 res = res.filter(tx => !tx.bankId);
@@ -75,7 +92,7 @@ export default function HistoryPage() {
             }
         }
         return res;
-    }, [transactions, bankFilter]);
+    }, [transactions, bankFilter, isWalletHidden]);
 
     const totalSpending = useMemo(() => {
         const boughtItems = filteredItems.filter(i => i.saved >= i.price);
@@ -91,11 +108,23 @@ export default function HistoryPage() {
     }, [filteredItems, totalSpending]);
 
     const groupedData = useMemo(() => {
-        const data = filter === 'cash-flow' ? filteredTransactions : filteredItems;
+        let data: any[] = [];
+        if (filter === 'everything') {
+            data = [...filteredItems, ...filteredTransactions];
+        } else {
+            data = filter === 'cash-flow' ? filteredTransactions : filteredItems;
+        }
+        
         const groups: { [key: string]: any[] } = {};
         
         data.forEach(item => {
-            const dateStr = filter === 'cash-flow' ? (item as Transaction).date : (item as Item).dateArchived;
+            let dateStr: string | null | undefined = null;
+            if ('description' in item) {
+                dateStr = (item as Transaction).date;
+            } else {
+                dateStr = (item as Item).dateArchived;
+            }
+            
             if (!dateStr) return;
             const date = new Date(dateStr).toLocaleDateString('en-US', {
                 month: 'long',
@@ -125,7 +154,13 @@ export default function HistoryPage() {
         });
 
         return sortedKeys.reduce((obj, key) => {
-            obj[key] = groups[key];
+            // Sort items within each group by time (descending)
+            const sortedGroup = groups[key].sort((a, b) => {
+                const dateA = new Date(('description' in a ? (a as Transaction).date : (a as Item).dateArchived) || 0);
+                const dateB = new Date(('description' in b ? (b as Transaction).date : (b as Item).dateArchived) || 0);
+                return dateB.getTime() - dateA.getTime();
+            });
+            obj[key] = sortedGroup;
             return obj;
         }, {} as { [key: string]: any[] });
 
@@ -148,12 +183,17 @@ export default function HistoryPage() {
         }
     };
 
-    const getTransactionIcon = (type: string) => {
+    const getTransactionIcon = (type: string, description?: string) => {
         switch (type) {
             case 'deposit': return <ArrowDownLeft className="w-5 h-5 text-emerald-600" />;
             case 'withdrawal': return <ArrowUpRight className="w-5 h-5 text-red-600" />;
             case 'allocation': return <Archive className="w-5 h-5 text-blue-600" />;
             case 'reversal': return <RefreshCw className="w-5 h-5 text-orange-600" />;
+            case 'transfer':
+                if (description?.startsWith('Transferred from')) {
+                    return <ArrowDownLeft className="w-5 h-5 text-emerald-600" />;
+                }
+                return <ArrowUpRight className="w-5 h-5 text-red-600" />;
             default: return <ArrowUpDown className="w-5 h-5 text-gray-600" />;
         }
     };
@@ -177,7 +217,18 @@ export default function HistoryPage() {
 
             <main className="px-4 pb-24 w-full max-w-md mx-auto flex-1">
                 {/* Type Filter Tabs */}
-                <nav aria-label="Transaction Type Filters" className="flex items-center gap-2 overflow-x-auto no-scrollbar bg-white p-1 rounded-full shadow-sm mb-4">
+                <nav 
+                    aria-label="Transaction Type Filters" 
+                    className="flex items-center gap-2 overflow-x-auto no-scrollbar bg-white p-1 rounded-full shadow-sm mb-4 cursor-grab"
+                    ref={typeFilterRef}
+                    {...typeFilterEvents}
+                >
+                    <button 
+                        onClick={() => setFilter('everything')}
+                        className={`flex-none px-6 py-1.5 rounded-full text-sm font-medium transition-all ${filter === 'everything' ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-500 hover:bg-gray-50'}`}
+                    >
+                        All
+                    </button>
                     <button 
                         onClick={() => setFilter('all')}
                         className={`flex-none px-6 py-1.5 rounded-full text-sm font-medium transition-all ${filter === 'all' ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-500 hover:bg-gray-50'}`}
@@ -205,19 +256,25 @@ export default function HistoryPage() {
                 </nav>
 
                 {/* Bank Source Filter */}
-                <div className="mb-6 flex gap-2 overflow-x-auto no-scrollbar pb-1">
+                <div 
+                    className="mb-6 flex gap-2 overflow-x-auto no-scrollbar pb-1 cursor-grab"
+                    ref={bankFilterRef}
+                    {...bankFilterEvents}
+                >
                      <button
                         onClick={() => setBankFilter('all')}
                         className={`flex-shrink-0 px-4 py-1.5 rounded-xl text-xs font-semibold border transition-colors ${bankFilter === 'all' ? 'bg-gray-800 text-white border-gray-800' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'}`}
                     >
                         All Sources
                     </button>
-                    <button
-                        onClick={() => setBankFilter('wallet')}
-                        className={`flex-shrink-0 px-4 py-1.5 rounded-xl text-xs font-semibold border transition-colors flex items-center gap-1 ${bankFilter === 'wallet' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'}`}
-                    >
-                        <Wallet className="w-3 h-3" /> Wallet
-                    </button>
+                    {!isWalletHidden && (
+                        <button
+                            onClick={() => setBankFilter('wallet')}
+                            className={`flex-shrink-0 px-4 py-1.5 rounded-xl text-xs font-semibold border transition-colors flex items-center gap-1 ${bankFilter === 'wallet' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'}`}
+                        >
+                            <Wallet className="w-3 h-3" /> Wallet
+                        </button>
+                    )}
                     {banks.map(bank => (
                         <button
                             key={bank.id}
@@ -264,18 +321,22 @@ export default function HistoryPage() {
                                     // Render Transaction
                                     if ('description' in item) {
                                         const tx = item as Transaction;
-                                        const isPositive = tx.type === 'deposit' || tx.type === 'reversal';
+                                        const isPositive = tx.type === 'deposit' || tx.type === 'reversal' || tx.description.startsWith('Transferred from');
                                         return (
                                             <article key={tx.id} className="flex items-center justify-between p-4 bg-white rounded-2xl mb-3 shadow-sm relative overflow-hidden">
                                                 <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${getBankColorClass(tx.bankId)}`}></div>
                                                 <div className="flex items-center space-x-4 ml-2 flex-1 min-w-0">
-                                                    <div className={`w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 ${tx.type === 'deposit' ? 'bg-emerald-100' : tx.type === 'withdrawal' ? 'bg-red-100' : 'bg-blue-100'}`}>
-                                                        {getTransactionIcon(tx.type)}
+                                                    <div className={`w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 ${isPositive ? 'bg-emerald-100' : tx.type === 'withdrawal' ? 'bg-red-100' : 'bg-blue-100'}`}>
+                                                        {getTransactionIcon(tx.type, tx.description)}
                                                     </div>
                                                     <div className="flex-1 min-w-0">
                                                         <h3 className="font-medium text-gray-900 text-sm break-words">{tx.description}</h3>
                                                         <p className="text-xs text-gray-400 mt-0.5">
-                                                            {new Date(tx.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                            {tx.type === 'transfer' ? (
+                                                                `${new Date(tx.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} at ${new Date(tx.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+                                                            ) : (
+                                                                new Date(tx.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                                                            )}
                                                         </p>
                                                         <p className="text-[10px] text-gray-400 font-medium truncate">
                                                             {tx.bankId ? banks.find(b => b.id === tx.bankId)?.name || 'Unknown Bank' : 'WishPay Wallet'}

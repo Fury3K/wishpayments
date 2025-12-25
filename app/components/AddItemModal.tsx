@@ -12,9 +12,10 @@ interface ItemModalProps {
     itemToEdit?: Item | null;
     banks: BankAccount[];
     walletBalance: number;
+    isWalletHidden?: boolean;
 }
 
-export const ItemModal = ({ isOpen, onClose, onSave, activeTab, itemToEdit, banks, walletBalance }: ItemModalProps) => {
+export const ItemModal = ({ isOpen, onClose, onSave, activeTab, itemToEdit, banks, walletBalance, isWalletHidden = false }: ItemModalProps) => {
     const [formData, setFormData] = useState({
         name: '',
         price: '',
@@ -31,7 +32,7 @@ export const ItemModal = ({ isOpen, onClose, onSave, activeTab, itemToEdit, bank
                     price: itemToEdit.price.toString(),
                     saved: itemToEdit.saved.toString(),
                     priority: itemToEdit.priority,
-                    sourceAccountId: itemToEdit.bankId ? itemToEdit.bankId.toString() : 'wallet'
+                    sourceAccountId: itemToEdit.bankId ? itemToEdit.bankId.toString() : (isWalletHidden ? (banks[0]?.id.toString() || '') : 'wallet')
                 });
             } else {
                 setFormData({
@@ -39,11 +40,11 @@ export const ItemModal = ({ isOpen, onClose, onSave, activeTab, itemToEdit, bank
                     price: '',
                     saved: '0',
                     priority: 'medium',
-                    sourceAccountId: 'wallet'
+                    sourceAccountId: isWalletHidden ? (banks[0]?.id.toString() || '') : 'wallet'
                 });
             }
         }
-    }, [isOpen, itemToEdit]);
+    }, [isOpen, itemToEdit, isWalletHidden, banks]);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -169,7 +170,9 @@ export const ItemModal = ({ isOpen, onClose, onSave, activeTab, itemToEdit, bank
                                 value={formData.sourceAccountId}
                                 onChange={e => setFormData({ ...formData, sourceAccountId: e.target.value })}
                             >
-                                <option value="wallet">WishPay Wallet (₱{(walletBalance || 0).toLocaleString()})</option>
+                                {!isWalletHidden && (
+                                    <option value="wallet">WishPay Wallet (₱{(walletBalance || 0).toLocaleString()})</option>
+                                )}
                                 {banks.map(bank => (
                                     <option key={bank.id} value={bank.id}>
                                         {bank.name} (₱{(bank.balance || 0).toLocaleString()})

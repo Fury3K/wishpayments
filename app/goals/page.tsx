@@ -18,6 +18,7 @@ export default function GoalsPage() {
     const [loadingItems, setLoadingItems] = useState(true);
     const [isItemModalOpen, setIsItemModalOpen] = useState(false);
     const [balance, setBalance] = useState(0);
+    const [isWalletHidden, setIsWalletHidden] = useState(false);
     const [userProfile, setUserProfile] = useState<{ profilePicture?: string } | null>(null);
 
     const fetchItems = useCallback(async () => {
@@ -31,6 +32,7 @@ export default function GoalsPage() {
             ]);
             setItems(itemsResponse.data);
             setBalance(userBalanceResponse.data.balance || 0);
+            setIsWalletHidden(userBalanceResponse.data.isWalletHidden || false);
             setUserProfile(profileResponse.data);
             setBanks(banksResponse.data);
         } catch (error: any) {
@@ -251,6 +253,7 @@ export default function GoalsPage() {
                 itemToEdit={null}
                 banks={banks}
                 walletBalance={balance}
+                isWalletHidden={isWalletHidden}
             />
         </div>
     );

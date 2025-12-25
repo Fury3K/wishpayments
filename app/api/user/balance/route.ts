@@ -31,6 +31,7 @@ export async function GET(req: Request) {
       balance: users.balance,
       name: users.name,
       email: users.email,
+      isWalletHidden: users.isWalletHidden,
     }).from(users).where(eq(users.id, userId));
     const user = userArray[0];
 
@@ -38,7 +39,12 @@ export async function GET(req: Request) {
       return addCorsHeaders(NextResponse.json({ message: 'User not found' }, { status: 404 }));
     }
 
-    return addCorsHeaders(NextResponse.json({ balance: user.balance, name: user.name, email: user.email }, { status: 200 }));
+    return addCorsHeaders(NextResponse.json({ 
+        balance: user.balance, 
+        name: user.name, 
+        email: user.email,
+        isWalletHidden: user.isWalletHidden 
+    }, { status: 200 }));
   } catch (error) {
     console.error('GET user balance/profile error:', error);
     return addCorsHeaders(NextResponse.json({ message: 'Internal server error' }, { status: 500 }));
@@ -52,16 +58,26 @@ export async function PUT(req: Request) {
         return addCorsHeaders(NextResponse.json({ message: 'Unauthorized' }, { status: 401 }));
       }
   
-      const { balance, transaction } = await req.json();
-  
-      if (typeof balance === 'undefined' || isNaN(parseInt(balance))) {
-        return addCorsHeaders(NextResponse.json({ message: 'Missing or invalid balance' }, { status: 400 }));
+      const body = await req.json();
+      const { balance, transaction, isWalletHidden } = body;
+      
+      const updateData: any = {};
+      
+      if (typeof balance !== 'undefined') {
+          if (isNaN(parseInt(balance))) {
+            return addCorsHeaders(NextResponse.json({ message: 'Invalid balance' }, { status: 400 }));
+          }
+          updateData.balance = parseInt(balance);
+      }
+
+      if (typeof isWalletHidden !== 'undefined') {
+          updateData.isWalletHidden = isWalletHidden;
       }
   
       const [updatedUser] = await db.update(users)
-        .set({ balance: parseInt(balance) })
+        .set(updateData)
         .where(eq(users.id, userId))
-        .returning({ balance: users.balance });
+        .returning({ balance: users.balance, isWalletHidden: users.isWalletHidden });
   
       if (!updatedUser) {
         return addCorsHeaders(NextResponse.json({ message: 'User not found' }, { status: 404 }));
@@ -79,7 +95,7 @@ export async function PUT(req: Request) {
           });
       }
   
-      return addCorsHeaders(NextResponse.json({ balance: updatedUser.balance }, { status: 200 }));
+      return addCorsHeaders(NextResponse.json({ balance: updatedUser.balance, isWalletHidden: updatedUser.isWalletHidden }, { status: 200 }));
     } catch (error) {
       console.error('PUT user balance error:', error);
       return addCorsHeaders(NextResponse.json({ message: 'Internal server error' }, { status: 500 }));
