@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { users } from '@/lib/schema';
+import { users, transactions } from '@/lib/schema';
 import { eq } from 'drizzle-orm';
 import { verifyJWT } from '@/lib/auth';
 import { addCorsHeaders, corsOptions } from '@/lib/cors';
@@ -52,7 +52,7 @@ export async function PUT(req: Request) {
         return addCorsHeaders(NextResponse.json({ message: 'Unauthorized' }, { status: 401 }));
       }
   
-      const { balance } = await req.json();
+      const { balance, transaction } = await req.json();
   
       if (typeof balance === 'undefined' || isNaN(parseInt(balance))) {
         return addCorsHeaders(NextResponse.json({ message: 'Missing or invalid balance' }, { status: 400 }));
@@ -65,6 +65,18 @@ export async function PUT(req: Request) {
   
       if (!updatedUser) {
         return addCorsHeaders(NextResponse.json({ message: 'User not found' }, { status: 404 }));
+      }
+
+      if (transaction) {
+          await db.insert(transactions).values({
+              userId,
+              amount: transaction.amount,
+              type: transaction.type,
+              description: transaction.description,
+              bankId: null, // Wallet
+              itemId: transaction.itemId || null,
+              date: new Date()
+          });
       }
   
       return addCorsHeaders(NextResponse.json({ balance: updatedUser.balance }, { status: 200 }));

@@ -196,7 +196,7 @@ export default function GoalsPage() {
                                     {/* Bank Color Indicator Strip */}
                                     <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${getBankColorClass(item.bankId)}`}></div>
                                     
-                                    <div className="flex items-center gap-4 ml-2">
+                                    <div className="flex items-center gap-4 ml-2 flex-1 min-w-0">
                                         <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-white shadow-md shrink-0 transition-transform group-hover:scale-105
                                             ${item.priority === 'high' ? 'bg-gradient-to-br from-red-500 to-red-600 shadow-red-500/30' : 
                                               item.priority === 'medium' ? 'bg-gradient-to-br from-purple-500 to-purple-600 shadow-purple-500/30' : 
@@ -207,7 +207,7 @@ export default function GoalsPage() {
                                             {item.priority === 'low' && <Leaf className="w-6 h-6 fill-white/20" />}
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                            <span className="block text-lg font-bold text-gray-800 group-hover:text-blue-600 transition-colors truncate mb-1">{item.name}</span>
+                                            <span className="block text-lg font-bold text-gray-800 group-hover:text-blue-600 transition-colors mb-1 break-words">{item.name}</span>
                                             <div className="w-full max-w-[140px] h-2 bg-gray-100 rounded-full overflow-hidden">
                                                 <div 
                                                     className={`h-full rounded-full transition-all duration-500 ${

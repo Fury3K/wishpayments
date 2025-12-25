@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { Settings, UserCircle, Plus } from 'lucide-react';
+import { Settings, UserCircle, Plus, ArrowRightLeft } from 'lucide-react';
 import api from '@/lib/api';
 import { toast } from 'react-hot-toast';
 import { Item } from '../types';
@@ -11,6 +11,7 @@ import { CashInModal } from '../components/modals/CashInModal';
 import { CashOutModal } from '../components/modals/CashOutModal';
 import { AddBankModal } from '../components/modals/AddBankModal';
 import { EditBankModal } from '../components/modals/EditBankModal';
+import { TransferModal } from '../components/modals/TransferModal';
 import { BankCard } from '../components/BankCard';
 
 interface BankAccount {
@@ -37,6 +38,7 @@ export default function Dashboard() {
     const [isCashOutModalOpen, setIsCashOutModalOpen] = useState(false);
     const [isAddBankModalOpen, setIsAddBankModalOpen] = useState(false);
     const [isEditBankModalOpen, setIsEditBankModalOpen] = useState(false);
+    const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
     
     // State to track active operations
     const [activeAccountId, setActiveAccountId] = useState<string | number>('wallet');
@@ -132,7 +134,14 @@ export default function Dashboard() {
         if (activeAccountId === 'wallet') {
             try {
                 const newBalance = walletBalance + amount;
-                await api.put('/api/user/balance', { balance: newBalance });
+                await api.put('/api/user/balance', { 
+                    balance: newBalance,
+                    transaction: {
+                        amount,
+                        type: 'deposit',
+                        description: 'Cashed in to WishPay Wallet'
+                    }
+                });
                 setWalletBalance(newBalance);
                 toast.success(`Cashed in ₱${amount.toLocaleString()} to Wallet!`);
                 setIsCashInModalOpen(false);
@@ -144,7 +153,15 @@ export default function Dashboard() {
              if (bank) {
                  try {
                      const newBalance = bank.balance + amount;
-                     await api.put(`/api/banks/${bank.id}`, { ...bank, balance: newBalance });
+                     await api.put(`/api/banks/${bank.id}`, { 
+                         ...bank, 
+                         balance: newBalance,
+                         transaction: {
+                             amount,
+                             type: 'deposit',
+                             description: `Cashed in to ${bank.name}`
+                         }
+                     });
                      setBankAccounts(prev => prev.map(b => b.id === activeAccountId ? { ...b, balance: newBalance } : b));
                      toast.success(`Cashed in ₱${amount.toLocaleString()}!`);
                      setIsCashInModalOpen(false);
@@ -163,7 +180,14 @@ export default function Dashboard() {
                     toast.error('Insufficient balance');
                     return;
                 }
-                await api.put('/api/user/balance', { balance: newBalance });
+                await api.put('/api/user/balance', { 
+                    balance: newBalance,
+                    transaction: {
+                        amount,
+                        type: 'withdrawal',
+                        description: 'Removed funds from WishPay Wallet'
+                    }
+                });
                 setWalletBalance(newBalance);
                 toast.success(`Removed ₱${amount.toLocaleString()} from Wallet!`);
                 setIsCashOutModalOpen(false);
@@ -179,7 +203,15 @@ export default function Dashboard() {
                 }
                 try {
                      const newBalance = bank.balance - amount;
-                     await api.put(`/api/banks/${bank.id}`, { ...bank, balance: newBalance });
+                     await api.put(`/api/banks/${bank.id}`, { 
+                         ...bank, 
+                         balance: newBalance,
+                         transaction: {
+                             amount,
+                             type: 'withdrawal',
+                             description: `Removed funds from ${bank.name}`
+                         }
+                     });
                      setBankAccounts(prev => prev.map(b => b.id === activeAccountId ? { ...b, balance: newBalance } : b));
                      toast.success(`Removed ₱${amount.toLocaleString()}!`);
                      setIsCashOutModalOpen(false);
@@ -187,6 +219,17 @@ export default function Dashboard() {
                      toast.error('Failed to update bank balance.');
                  }
             }
+        }
+    };
+
+    const handleTransfer = async (sourceId: string, destId: string, amount: number) => {
+        try {
+            await api.post('/api/transfer', { sourceId, destinationId: destId, amount });
+            toast.success(`Transferred ₱${amount.toLocaleString()}!`);
+            fetchData(); // Refresh data to update balances
+            setIsTransferModalOpen(false);
+        } catch (error: any) {
+            toast.error(error.response?.data?.message || 'Transfer failed.');
         }
     };
 
@@ -296,12 +339,20 @@ export default function Dashboard() {
                     <section className="bg-white rounded-3xl p-6 shadow-[0_10px_30px_-5px_rgba(0,0,0,0.03)]">
                         <div className="flex items-center justify-between mb-5 mt-2">
                              <h3 className="font-bold text-lg text-[#1A1B2D]">Bank Accounts</h3>
-                             <button 
-                                onClick={() => setIsAddBankModalOpen(true)}
-                                className="flex items-center gap-1 text-sm font-semibold text-blue-600 hover:text-blue-800 bg-blue-50 px-3 py-1.5 rounded-lg transition-colors"
-                             >
-                                <Plus className="w-4 h-4" /> Add Bank
-                            </button>
+                             <div className="flex items-center">
+                                 <button 
+                                    onClick={() => setIsTransferModalOpen(true)}
+                                    className="flex items-center gap-1 text-sm font-semibold text-indigo-600 hover:text-indigo-800 bg-indigo-50 px-3 py-1.5 rounded-lg transition-colors mr-2"
+                                 >
+                                    <ArrowRightLeft className="w-4 h-4" /> Transfer
+                                </button>
+                                 <button 
+                                    onClick={() => setIsAddBankModalOpen(true)}
+                                    className="flex items-center gap-1 text-sm font-semibold text-blue-600 hover:text-blue-800 bg-blue-50 px-3 py-1.5 rounded-lg transition-colors"
+                                 >
+                                    <Plus className="w-4 h-4" /> Add Bank
+                                </button>
+                             </div>
                         </div>
                         <ul className="space-y-6">
                              {/* WishPay Wallet */}
@@ -371,6 +422,13 @@ export default function Dashboard() {
                 onSave={handleUpdateBank}
                 onDelete={handleDeleteBank}
                 bankToEdit={bankToEdit}
+            />
+            <TransferModal
+                isOpen={isTransferModalOpen}
+                onClose={() => setIsTransferModalOpen(false)}
+                onConfirm={handleTransfer}
+                walletBalance={walletBalance}
+                banks={bankAccounts}
             />
         </div>
     );

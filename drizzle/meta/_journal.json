@@ -50,6 +50,27 @@
       "when": 1766656016657,
       "tag": "0006_shiny_madelyne_pryor",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1766659971760,
+      "tag": "0007_yielding_aaron_stack",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1766661763240,
+      "tag": "0008_sad_bullseye",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1766662555520,
+      "tag": "0009_rainy_moon_knight",
+      "breakpoints": true
     }
   ]
 }

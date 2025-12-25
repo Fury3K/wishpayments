@@ -2,13 +2,15 @@
 
 import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
-import { ChevronLeft, Edit3 } from 'lucide-react';
+import { ChevronLeft, Edit3, CheckCircle } from 'lucide-react';
 import api from '@/lib/api';
 import { Item, BankAccount } from '@/app/types';
 import { toast } from 'react-hot-toast';
 import { BottomNav } from '@/app/components/BottomNav';
 import { ItemModal } from '@/app/components/AddItemModal';
 import { AddFundsModal } from '@/app/components/modals/AddFundsModal';
+import { DeductFundsModal } from '@/app/components/modals/DeductFundsModal';
+import { CompleteConfirmationModal } from '@/app/components/modals/CompleteConfirmationModal';
 import Link from 'next/link';
 
 export default function ItemDetailsPage({ params }: { params: Promise<{ id: string }> }) {
@@ -20,6 +22,8 @@ export default function ItemDetailsPage({ params }: { params: Promise<{ id: stri
     const [loading, setLoading] = useState(true);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isAddFundsModalOpen, setIsAddFundsModalOpen] = useState(false);
+    const [isDeductFundsModalOpen, setIsDeductFundsModalOpen] = useState(false);
+    const [isCompleteModalOpen, setIsCompleteModalOpen] = useState(false);
 
     const fetchData = async () => {
         try {
@@ -73,7 +77,21 @@ export default function ItemDetailsPage({ params }: { params: Promise<{ id: stri
                 return;
             }
 
-            const response = await api.put(`/api/items/${item.id}`, updatedItemData);
+            // Prepare transaction object if funds changed
+            let transactionPayload = {};
+            if (savedDiff !== 0) {
+                transactionPayload = {
+                    transaction: {
+                        amount: Math.abs(savedDiff),
+                        type: savedDiff > 0 ? 'allocation' : 'reversal',
+                        description: savedDiff > 0 ? `Added funds to ${item.name}` : `Removed funds from ${item.name}`,
+                        bankId: bankId,
+                        itemId: item.id
+                    }
+                };
+            }
+
+            const response = await api.put(`/api/items/${item.id}`, { ...updatedItemData, ...transactionPayload });
             setItem(response.data);
 
             if (savedDiff !== 0) {
@@ -105,8 +123,21 @@ export default function ItemDetailsPage({ params }: { params: Promise<{ id: stri
         
         try {
             const updatedItemData = { ...item, saved: newSaved };
-            const response = await api.put(`/api/items/${item.id}`, updatedItemData);
-            setItem(response.data);
+            
+            // Send transaction details with item update
+            const response = await api.put(`/api/items/${item.id}`, { 
+                ...updatedItemData,
+                transaction: {
+                    amount: amount,
+                    type: 'allocation',
+                    description: `Added funds to ${item.name}`,
+                    bankId: selectedBankId,
+                    itemId: item.id
+                }
+            });
+            
+            const updatedItem = response.data;
+            setItem(updatedItem);
 
             if (!selectedBankId) {
                 const newBalance = balance - amount;
@@ -123,8 +154,68 @@ export default function ItemDetailsPage({ params }: { params: Promise<{ id: stri
 
             toast.success(`Added ₱${amount.toLocaleString()} to ${item.name}!`);
             setIsAddFundsModalOpen(false);
+
+            // Check if fully funded and trigger prompt
+            if (updatedItem.saved >= updatedItem.price) {
+                setIsCompleteModalOpen(true);
+            }
         } catch (error: any) {
              toast.error(error.response?.data?.message || 'Failed to add funds.');
+        }
+    };
+
+    const handleDeductFunds = async (amount: number) => {
+        if (!item) return;
+
+        const newSaved = item.saved - amount;
+        if (newSaved < 0) return; // Should be prevented by modal but safe check
+
+        try {
+            const updatedItemData = { ...item, saved: newSaved };
+
+            const response = await api.put(`/api/items/${item.id}`, {
+                ...updatedItemData,
+                transaction: {
+                    amount: amount,
+                    type: 'reversal',
+                    description: `Removed funds from ${item.name}`,
+                    bankId: item.bankId,
+                    itemId: item.id
+                }
+            });
+
+            const updatedItem = response.data;
+            setItem(updatedItem);
+
+            // Add funds back to source
+            if (!item.bankId) {
+                const newBalance = balance + amount;
+                const balanceResponse = await api.put('/api/user/balance', { balance: newBalance });
+                setBalance(balanceResponse.data.balance);
+            } else {
+                const bank = banks.find(b => b.id === item.bankId);
+                if (bank) {
+                    const newBankBalance = bank.balance + amount;
+                    await api.put(`/api/banks/${bank.id}`, { ...bank, balance: newBankBalance });
+                    setBanks(prev => prev.map(b => b.id === bank.id ? { ...b, balance: newBankBalance } : b));
+                }
+            }
+
+            toast.success(`Returned ₱${amount.toLocaleString()} to source!`);
+            setIsDeductFundsModalOpen(false);
+        } catch (error: any) {
+            toast.error(error.response?.data?.message || 'Failed to deduct funds.');
+        }
+    };
+
+    const handleComplete = async () => {
+        if (!item) return;
+        try {
+            await api.delete(`/api/items/${item.id}`);
+            toast.success('Goal completed and archived!');
+            router.push('/history');
+        } catch (error: any) {
+            toast.error('Failed to complete goal.');
         }
     };
 
@@ -202,13 +293,29 @@ export default function ItemDetailsPage({ params }: { params: Promise<{ id: stri
                     >
                         <Edit3 className="w-5 h-5" /> Edit Details
                     </button>
-                    <button 
-                        onClick={() => setIsAddFundsModalOpen(true)}
-                        className="w-full bg-blue-700 text-white rounded-xl py-4 font-bold text-lg shadow-lg hover:bg-blue-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        disabled={item.saved >= item.price}
-                    >
-                        {item.saved >= item.price ? 'Fully Funded' : 'Add Funds'}
-                    </button>
+                    {item.saved >= item.price ? (
+                        <button 
+                            onClick={() => setIsCompleteModalOpen(true)}
+                            className="w-full bg-emerald-500 text-white rounded-xl py-4 font-bold text-lg shadow-lg hover:bg-emerald-600 transition-colors flex items-center justify-center gap-2"
+                        >
+                            <CheckCircle className="w-6 h-6" /> Archive Goal
+                        </button>
+                    ) : (
+                        <button 
+                            onClick={() => setIsAddFundsModalOpen(true)}
+                            className="w-full bg-blue-700 text-white rounded-xl py-4 font-bold text-lg shadow-lg hover:bg-blue-800 transition-colors"
+                        >
+                            Add Funds
+                        </button>
+                    )}
+                    {item.saved > 0 && !item.isArchived && (
+                        <button 
+                            onClick={() => setIsDeductFundsModalOpen(true)}
+                            className="w-full text-slate-500 hover:text-red-600 font-semibold py-3 hover:bg-red-50 rounded-xl transition-all"
+                        >
+                            Deduct Funds
+                        </button>
+                    )}
                 </section>
             </main>
 
@@ -235,6 +342,22 @@ export default function ItemDetailsPage({ params }: { params: Promise<{ id: stri
                 walletBalance={balance}
                 banks={banks}
                 defaultBankId={item.bankId}
+            />
+
+            <DeductFundsModal
+                isOpen={isDeductFundsModalOpen}
+                onClose={() => setIsDeductFundsModalOpen(false)}
+                onConfirm={handleDeductFunds}
+                itemName={item.name}
+                currentSaved={item.saved}
+                fundingSourceName={item.bankId ? banks.find(b => b.id === item.bankId)?.name || 'Unknown Bank' : 'WishPay Wallet'}
+            />
+
+            <CompleteConfirmationModal 
+                isOpen={isCompleteModalOpen}
+                itemName={item.name}
+                onConfirm={handleComplete}
+                onCancel={() => setIsCompleteModalOpen(false)}
             />
         </div>
     );

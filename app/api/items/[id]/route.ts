@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { items } from '@/lib/schema';
+import { items, transactions } from '@/lib/schema';
 import { eq, and } from 'drizzle-orm';
 import { verifyJWT } from '@/lib/auth';
 import { addCorsHeaders, corsOptions } from '@/lib/cors';
@@ -61,7 +61,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       return addCorsHeaders(NextResponse.json({ message: 'Invalid item ID' }, { status: 400 }));
     }
 
-    const { name, price, saved, type, priority, bankId } = await req.json();
+    const { name, price, saved, type, priority, bankId, transaction } = await req.json();
 
     if (!name || !price || !type || !priority) {
       return addCorsHeaders(NextResponse.json({ message: 'Missing required fields' }, { status: 400 }));
@@ -81,6 +81,18 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 
     if (!updatedItem) {
       return addCorsHeaders(NextResponse.json({ message: 'Item not found or unauthorized' }, { status: 404 }));
+    }
+
+    if (transaction) {
+        await db.insert(transactions).values({
+            userId,
+            amount: transaction.amount,
+            type: transaction.type,
+            description: transaction.description,
+            bankId: transaction.bankId || null,
+            itemId: updatedItem.id,
+            date: new Date()
+        });
     }
 
     return addCorsHeaders(NextResponse.json(updatedItem, { status: 200 }));

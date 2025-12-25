@@ -2,6 +2,7 @@ import { pgTable, serial, text, integer, timestamp, boolean, pgEnum } from 'driz
 
 export const priorityEnum = pgEnum('priority', ['high', 'medium', 'low']);
 export const itemTypeEnum = pgEnum('item_type', ['need', 'want']);
+export const transactionTypeEnum = pgEnum('transaction_type', ['deposit', 'withdrawal', 'allocation', 'reversal', 'transfer']);
 
 export const users = pgTable('users', {
   id: serial('id').primaryKey(),
@@ -12,6 +13,8 @@ export const users = pgTable('users', {
   profilePicture: text('profile_picture'),
   googleId: text('google_id').unique(),
   facebookId: text('facebook_id').unique(),
+  walletName: text('wallet_name').default('WishPay Wallet').notNull(),
+  isWalletHidden: boolean('is_wallet_hidden').default(false).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
@@ -36,4 +39,15 @@ export const bankAccounts = pgTable('bank_accounts', {
   color: text('color').default('blue').notNull(),
   balance: integer('balance').default(0).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+export const transactions = pgTable('transactions', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id').references(() => users.id).notNull(),
+  amount: integer('amount').notNull(),
+  type: transactionTypeEnum('type').notNull(),
+  description: text('description').notNull(),
+  bankId: integer('bank_id').references(() => bankAccounts.id),
+  itemId: integer('item_id').references(() => items.id),
+  date: timestamp('date').defaultNow().notNull(),
 });

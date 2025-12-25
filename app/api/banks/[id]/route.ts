@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { bankAccounts } from '@/lib/schema';
+import { bankAccounts, transactions } from '@/lib/schema';
 import { eq, and } from 'drizzle-orm';
 import { verifyJWT } from '@/lib/auth';
 import { addCorsHeaders, corsOptions } from '@/lib/cors';
@@ -28,7 +28,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
             return addCorsHeaders(NextResponse.json({ message: 'Invalid bank ID' }, { status: 400 }));
         }
 
-        const { name, color, balance } = await req.json();
+        const { name, color, balance, transaction } = await req.json();
 
         const [updatedBank] = await db.update(bankAccounts)
             .set({
@@ -41,6 +41,18 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 
         if (!updatedBank) {
             return addCorsHeaders(NextResponse.json({ message: 'Bank not found' }, { status: 404 }));
+        }
+
+        if (transaction) {
+            await db.insert(transactions).values({
+                userId,
+                amount: transaction.amount,
+                type: transaction.type,
+                description: transaction.description,
+                bankId: updatedBank.id,
+                itemId: transaction.itemId || null,
+                date: new Date()
+            });
         }
 
         return addCorsHeaders(NextResponse.json(updatedBank, { status: 200 }));
