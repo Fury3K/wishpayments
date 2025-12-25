@@ -12,12 +12,14 @@ export async function GET(req: Request) {
     const code = searchParams.get('code');
     const error = searchParams.get('error');
 
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || req.url;
+
     if (error) {
-        return NextResponse.redirect(new URL(`/auth-sync?error=${encodeURIComponent('Facebook login failed: ' + error)}`, req.url));
+        return NextResponse.redirect(new URL(`/auth-sync?error=${encodeURIComponent('Facebook login failed: ' + error)}`, baseUrl));
     }
 
     if (!code) {
-        return NextResponse.redirect(new URL(`/auth-sync?error=${encodeURIComponent('No code provided')}`, req.url));
+        return NextResponse.redirect(new URL(`/auth-sync?error=${encodeURIComponent('No code provided')}`, baseUrl));
     }
 
     const clientId = process.env.FACEBOOK_CLIENT_ID;
@@ -25,7 +27,7 @@ export async function GET(req: Request) {
     const redirectUri = process.env.FACEBOOK_REDIRECT_URI;
 
     if (!clientId || !clientSecret || !redirectUri) {
-         return NextResponse.redirect(new URL(`/auth-sync?error=${encodeURIComponent('Server configuration error')}`, req.url));
+         return NextResponse.redirect(new URL(`/auth-sync?error=${encodeURIComponent('Server configuration error')}`, baseUrl));
     }
 
     try {
@@ -57,7 +59,7 @@ export async function GET(req: Request) {
 
         if (!email) {
             // Facebook might not return email if user didn't grant permission or signed up with phone
-             return NextResponse.redirect(new URL(`/auth-sync?error=${encodeURIComponent('No email found from Facebook account')}`, req.url));
+             return NextResponse.redirect(new URL(`/auth-sync?error=${encodeURIComponent('No email found from Facebook account')}`, baseUrl));
         }
 
         // Check if user exists by Facebook ID
@@ -92,10 +94,10 @@ export async function GET(req: Request) {
 
         const token = await signJWT({ userId: existingUser.id, email: existingUser.email });
 
-        return NextResponse.redirect(new URL(`/auth-sync?token=${token}`, req.url));
+        return NextResponse.redirect(new URL(`/auth-sync?token=${token}`, baseUrl));
 
     } catch (err: any) {
         console.error('Facebook Auth Error:', err.response?.data || err.message);
-        return NextResponse.redirect(new URL(`/auth-sync?error=${encodeURIComponent('Authentication failed')}`, req.url));
+        return NextResponse.redirect(new URL(`/auth-sync?error=${encodeURIComponent('Authentication failed')}`, baseUrl));
     }
 }

@@ -12,12 +12,14 @@ export async function GET(req: Request) {
     const code = searchParams.get('code');
     const error = searchParams.get('error');
 
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || req.url;
+
     if (error) {
-        return NextResponse.redirect(new URL(`/auth-sync?error=${encodeURIComponent('Google login failed: ' + error)}`, req.url));
+        return NextResponse.redirect(new URL(`/auth-sync?error=${encodeURIComponent('Google login failed: ' + error)}`, baseUrl));
     }
 
     if (!code) {
-        return NextResponse.redirect(new URL(`/auth-sync?error=${encodeURIComponent('No code provided')}`, req.url));
+        return NextResponse.redirect(new URL(`/auth-sync?error=${encodeURIComponent('No code provided')}`, baseUrl));
     }
 
     const clientId = process.env.GOOGLE_CLIENT_ID;
@@ -25,7 +27,7 @@ export async function GET(req: Request) {
     const redirectUri = process.env.GOOGLE_REDIRECT_URI;
 
     if (!clientId || !clientSecret || !redirectUri) {
-         return NextResponse.redirect(new URL(`/auth-sync?error=${encodeURIComponent('Server configuration error')}`, req.url));
+         return NextResponse.redirect(new URL(`/auth-sync?error=${encodeURIComponent('Server configuration error')}`, baseUrl));
     }
 
     try {
@@ -80,10 +82,10 @@ export async function GET(req: Request) {
 
         const token = await signJWT({ userId: existingUser.id, email: existingUser.email });
 
-        return NextResponse.redirect(new URL(`/auth-sync?token=${token}`, req.url));
+        return NextResponse.redirect(new URL(`/auth-sync?token=${token}`, baseUrl));
 
     } catch (err: any) {
         console.error('Google Auth Error:', err);
-        return NextResponse.redirect(new URL(`/auth-sync?error=${encodeURIComponent('Authentication failed')}`, req.url));
+        return NextResponse.redirect(new URL(`/auth-sync?error=${encodeURIComponent('Authentication failed')}`, baseUrl));
     }
 }
