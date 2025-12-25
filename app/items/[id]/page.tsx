@@ -18,6 +18,7 @@ export default function ItemDetailsPage({ params }: { params: Promise<{ id: stri
     const router = useRouter();
     const [item, setItem] = useState<Item | null>(null);
     const [balance, setBalance] = useState(0);
+    const [isWalletHidden, setIsWalletHidden] = useState(false);
     const [banks, setBanks] = useState<BankAccount[]>([]);
     const [loading, setLoading] = useState(true);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -34,6 +35,7 @@ export default function ItemDetailsPage({ params }: { params: Promise<{ id: stri
             ]);
             setItem(itemResponse.data);
             setBalance(balanceResponse.data.balance || 0);
+            setIsWalletHidden(balanceResponse.data.isWalletHidden || false);
             setBanks(banksResponse.data || []);
         } catch (error: any) {
             toast.error('Failed to fetch item details.');
@@ -234,7 +236,7 @@ export default function ItemDetailsPage({ params }: { params: Promise<{ id: stri
     };
 
     return (
-        <div className="bg-gray-50 text-slate-800 font-sans antialiased min-h-screen pb-24 relative flex flex-col">
+        <div className="bg-gray-50 text-slate-800 font-sans antialiased min-h-screen pb-[calc(6rem+env(safe-area-inset-bottom))] relative flex flex-col">
             {/* Header */}
             <header className="flex items-center justify-between px-4 py-4 bg-white sticky top-0 z-20 shadow-sm">
                 <Link href="/goals" className="w-10 h-10 flex items-center justify-center text-blue-500 hover:bg-blue-50 rounded-full transition">
@@ -330,6 +332,7 @@ export default function ItemDetailsPage({ params }: { params: Promise<{ id: stri
                 itemToEdit={item}
                 banks={banks}
                 walletBalance={balance}
+                isWalletHidden={isWalletHidden}
             />
 
             <AddFundsModal

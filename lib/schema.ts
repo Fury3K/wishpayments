@@ -16,6 +16,11 @@ export const users = pgTable('users', {
   walletName: text('wallet_name').default('WishPay Wallet').notNull(),
   isWalletHidden: boolean('is_wallet_hidden').default(false).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
+  emailVerified: boolean('email_verified').default(false).notNull(),
+  verificationToken: text('verification_token'),
+  verificationTokenExpiry: timestamp('verification_token_expiry'),
+  resetToken: text('reset_token'),
+  resetTokenExpiry: timestamp('reset_token_expiry'),
 });
 
 export const items = pgTable('items', {

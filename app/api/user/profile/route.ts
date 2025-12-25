@@ -48,12 +48,34 @@ export async function PUT(req: Request) {
             return addCorsHeaders(NextResponse.json({ message: 'Unauthorized' }, { status: 401 }));
         }
 
-        const { name, email, password, profilePicture } = await req.json();
+        const { name, email, password, oldPassword, profilePicture } = await req.json();
 
         const updateData: any = { name, email };
+
         if (password && password.trim() !== '') {
+            if (!oldPassword) {
+                return addCorsHeaders(NextResponse.json({ message: 'Current password is required to set a new password' }, { status: 400 }));
+            }
+
+            // Fetch current user password
+            const [currentUser] = await db.select({ password: users.password }).from(users).where(eq(users.id, userId));
+
+            if (!currentUser) {
+                return addCorsHeaders(NextResponse.json({ message: 'User not found' }, { status: 404 }));
+            }
+
+            if (!currentUser.password) {
+                return addCorsHeaders(NextResponse.json({ message: 'No password set for this account. If you registered via social login, please use that.' }, { status: 400 }));
+            }
+
+            const isPasswordValid = await bcrypt.compare(oldPassword, currentUser.password);
+            if (!isPasswordValid) {
+                return addCorsHeaders(NextResponse.json({ message: 'Incorrect current password' }, { status: 403 }));
+            }
+
             updateData.password = await bcrypt.hash(password, 10);
         }
+
         if (profilePicture !== undefined) {
              updateData.profilePicture = profilePicture;
         }

@@ -33,6 +33,10 @@ export async function POST(req: Request) {
       return addCorsHeaders(NextResponse.json({ message: 'Invalid credentials' }, { status: 401 }));
     }
 
+    if (!user.emailVerified) {
+      return addCorsHeaders(NextResponse.json({ message: 'Please verify your email before logging in.' }, { status: 403 }));
+    }
+
     const passwordMatch = await comparePassword(password, user.password);
     console.log(`Password match result for ${email}: ${passwordMatch}`);
 
@@ -46,8 +50,8 @@ export async function POST(req: Request) {
     response.cookies.set('token', token, {
         httpOnly: false, // Set to false so client can read it if needed, or true for security (middleware can still read it)
         secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
-        maxAge: 60 * 60 * 24, // 1 day
+        sameSite: 'lax',
+        maxAge: 60 * 60 * 24 * 30, // 30 days
         path: '/',
     });
 

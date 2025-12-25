@@ -1,0 +1,17 @@
+{
+  "name": "WishPay",
+  "short_name": "WishPay",
+  "description": "Track your Needs and Wants savings",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#F8FAFC",
+  "theme_color": "#103B6D",
+  "icons": [
+    {
+      "src": "/icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

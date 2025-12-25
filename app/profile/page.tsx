@@ -6,6 +6,7 @@ import { ChevronLeft, User, Mail, Lock, LogOut, Save, Camera } from 'lucide-reac
 import api from '@/lib/api';
 import { toast } from 'react-hot-toast';
 import { BottomNav } from '../components/BottomNav';
+import { ConfirmationModal } from '../components/modals/ConfirmationModal';
 import Link from 'next/link';
 
 export default function ProfilePage() {
@@ -14,9 +15,11 @@ export default function ProfilePage() {
     const [saving, setSaving] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
     const [showSuccessModal, setShowSuccessModal] = useState(false);
+    const [showLogoutModal, setShowLogoutModal] = useState(false);
     const [formData, setFormData] = useState({
         name: '',
         email: '',
+        oldPassword: '',
         password: '',
         confirmPassword: '',
         profilePicture: ''
@@ -43,10 +46,14 @@ export default function ProfilePage() {
         fetchProfile();
     }, [router]);
 
-    const handleLogout = () => {
+    const confirmLogout = () => {
         localStorage.removeItem('token');
         toast.success('Logged out successfully');
         router.push('/login');
+    };
+
+    const handleLogout = () => {
+        setShowLogoutModal(true);
     };
 
     const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -104,11 +111,12 @@ export default function ProfilePage() {
             await api.put('/api/user/profile', {
                 name: formData.name,
                 email: formData.email,
+                oldPassword: formData.oldPassword || undefined,
                 password: formData.password || undefined,
                 profilePicture: formData.profilePicture
             });
             toast.success('Profile updated successfully');
-            setFormData(prev => ({ ...prev, password: '', confirmPassword: '' }));
+            setFormData(prev => ({ ...prev, oldPassword: '', password: '', confirmPassword: '' }));
         } catch (error: any) {
             toast.error(error.response?.data?.message || 'Failed to update profile');
         } finally {
@@ -121,7 +129,7 @@ export default function ProfilePage() {
     }
 
     return (
-        <div className="bg-[#F3F4F6] font-sans text-[#1A1B2D] antialiased min-h-screen pb-24 relative flex flex-col">
+        <div className="bg-[#F3F4F6] font-sans text-[#1A1B2D] antialiased min-h-screen pb-[calc(6rem+env(safe-area-inset-bottom))] relative flex flex-col">
             {/* Header */}
             <header className="flex items-center justify-between px-6 py-6 sticky top-0 bg-[#F3F4F6] z-10">
                 <Link href="/dashboard" className="p-2 -ml-2 text-gray-500 hover:text-gray-800 transition-colors">
@@ -196,8 +204,25 @@ export default function ProfilePage() {
 
                         <div className="pt-4 space-y-4">
                             <h3 className="font-bold text-lg text-[#1A1B2D]">Security</h3>
+                            
                             <div className="space-y-1">
-                                <label className="text-sm font-medium text-gray-700 ml-1">New Password (Optional)</label>
+                                <label className="text-sm font-medium text-gray-700 ml-1">Current Password</label>
+                                <div className="relative">
+                                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
+                                        <Lock className="w-5 h-5" />
+                                    </div>
+                                    <input
+                                        type="password"
+                                        placeholder="••••••••"
+                                        value={formData.oldPassword}
+                                        onChange={e => setFormData({ ...formData, oldPassword: e.target.value })}
+                                        className="w-full pl-11 pr-4 py-3.5 bg-gray-50 border-2 border-gray-100 rounded-xl text-gray-800 focus:outline-none focus:border-blue-500 focus:ring-0 transition-all placeholder:text-gray-400"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="space-y-1">
+                                <label className="text-sm font-medium text-gray-700 ml-1">New Password</label>
                                 <div className="relative">
                                     <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
                                         <Lock className="w-5 h-5" />
@@ -214,7 +239,7 @@ export default function ProfilePage() {
 
                             {formData.password && (
                                 <div className="space-y-1">
-                                    <label className="text-sm font-medium text-gray-700 ml-1">Confirm Password</label>
+                                    <label className="text-sm font-medium text-gray-700 ml-1">Confirm New Password</label>
                                     <div className="relative">
                                         <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
                                             <Lock className="w-5 h-5" />
@@ -269,6 +294,17 @@ export default function ProfilePage() {
                     <div className="modal-backdrop" onClick={() => setShowSuccessModal(false)}></div>
                 </div>
             )}
+
+            <ConfirmationModal
+                isOpen={showLogoutModal}
+                title="Log Out"
+                message="Are you sure you want to log out of your account?"
+                onConfirm={confirmLogout}
+                onCancel={() => setShowLogoutModal(false)}
+                confirmText="Log Out"
+                cancelText="Cancel"
+                variant="danger"
+            />
         </div>
     );
 }

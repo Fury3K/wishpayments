@@ -6,6 +6,7 @@ interface ConfirmationModalProps {
     onCancel: () => void;
     confirmText?: string;
     cancelText?: string;
+    variant?: 'primary' | 'danger';
 }
 
 export const ConfirmationModal = ({ 
@@ -15,9 +16,14 @@ export const ConfirmationModal = ({
     onConfirm, 
     onCancel,
     confirmText = "Confirm",
-    cancelText = "Cancel"
+    cancelText = "Cancel",
+    variant = 'primary'
 }: ConfirmationModalProps) => {
     if (!isOpen) return null;
+
+    const confirmButtonClass = variant === 'danger' 
+        ? "btn bg-red-600 hover:bg-red-700 text-white border-none" 
+        : "btn btn-primary";
 
     return (
         <div className="modal modal-open modal-bottom sm:modal-middle z-50">
@@ -26,7 +32,7 @@ export const ConfirmationModal = ({
                 <p className="py-4">{message}</p>
                 <div className="modal-action">
                     <button className="btn" onClick={onCancel}>{cancelText}</button>
-                    <button className="btn btn-primary" onClick={onConfirm}>{confirmText}</button>
+                    <button className={confirmButtonClass} onClick={onConfirm}>{confirmText}</button>
                 </div>
             </div>
             <div className="modal-backdrop" onClick={onCancel}></div>

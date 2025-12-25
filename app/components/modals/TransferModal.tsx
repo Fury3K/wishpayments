@@ -7,7 +7,7 @@ import { BankAccount } from '@/app/types';
 interface TransferModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onConfirm: (sourceId: string, destId: string, amount: number) => void;
+    onConfirm: (sourceId: string, destId: string, amount: number, customSourceName?: string, customDestName?: string) => void;
     walletBalance: number;
     banks: BankAccount[];
     isWalletHidden?: boolean;
@@ -24,10 +24,14 @@ export function TransferModal({
     const [amount, setAmount] = useState('');
     const [sourceId, setSourceId] = useState<string>('wallet');
     const [destId, setDestId] = useState<string>('');
+    const [customSourceName, setCustomSourceName] = useState('');
+    const [customDestName, setCustomDestName] = useState('');
 
     useEffect(() => {
         if (isOpen) {
             setAmount('');
+            setCustomSourceName('');
+            setCustomDestName('');
             if (isWalletHidden) {
                 // If wallet is hidden, default to first bank
                 if (banks.length > 0) {
@@ -50,6 +54,7 @@ export function TransferModal({
 
     const getBalance = (id: string) => {
         if (id === 'wallet') return walletBalance;
+        if (id === 'custom') return Infinity; // Custom source has unlimited funds effectively
         return banks.find(b => b.id.toString() === id)?.balance || 0;
     };
 
@@ -58,9 +63,19 @@ export function TransferModal({
     const handleConfirm = () => {
         const val = parseFloat(amount);
         if (isNaN(val) || val <= 0) return;
-        if (sourceId === destId) return;
+        if (sourceId === destId && sourceId !== 'custom') return;
         
-        onConfirm(sourceId, destId, val);
+        // Pass custom names as part of the ID or separate args?
+        // Let's modify the onConfirm signature in the parent, but for now let's pass an object if possible or just pass special strings
+        // Actually, the best way is to pass the custom name via a modified onConfirm prop in the interface
+        // But since we can't easily change the interface without changing the parent file first,
+        // let's pass the custom name as a 4th and 5th argument if the parent supports it, OR
+        // we can encode it in the ID (e.g. "custom:MyBank"), but that's messy.
+        
+        // Let's assume onConfirm will be updated to accept an object or we update it here.
+        // For now, I will modify the props interface in this file.
+        
+        onConfirm(sourceId, destId, val, customSourceName, customDestName);
         onClose();
     };
 
@@ -81,9 +96,9 @@ export function TransferModal({
                 <div className="p-6">
                     <div className="mb-4 text-center">
                          <p className="text-xs font-bold text-indigo-600 uppercase tracking-widest mb-1">
-                            {sourceId === 'wallet' ? 'WishPay Wallet' : (banks.find(b => b.id.toString() === sourceId)?.name || 'Bank Account')}
+                            {sourceId === 'wallet' ? 'WishPay Wallet' : sourceId === 'custom' ? (customSourceName || 'External Bank') : (banks.find(b => b.id.toString() === sourceId)?.name || 'Bank Account')}
                          </p>
-                         <p className="text-sm text-gray-500 mb-1">Available: <span className="font-semibold text-gray-700">₱{sourceBalance.toLocaleString()}</span></p>
+                         <p className="text-sm text-gray-500 mb-1">Available: <span className="font-semibold text-gray-700">{sourceId === 'custom' ? 'N/A' : `₱${sourceBalance.toLocaleString()}`}</span></p>
                     </div>
 
                     <div className="relative mb-6">
@@ -110,8 +125,7 @@ export function TransferModal({
                                 value={sourceId}
                                 onChange={e => {
                                     setSourceId(e.target.value);
-                                    if (e.target.value === destId) {
-                                        // Pick a new destination that isn't the source
+                                    if (e.target.value === destId && e.target.value !== 'custom') {
                                         if (e.target.value === 'wallet') {
                                              setDestId(banks[0]?.id.toString() || '');
                                         } else {
@@ -129,11 +143,21 @@ export function TransferModal({
                                 {banks.map(bank => (
                                     <option key={bank.id} value={bank.id}>{bank.name}</option>
                                 ))}
+                                <option value="custom">Custom (External)</option>
                             </select>
                              <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
                             </div>
                         </div>
+                        {sourceId === 'custom' && (
+                            <input 
+                                type="text" 
+                                placeholder="Enter Bank Name (e.g. BDO, Gcash)"
+                                className="w-full px-4 py-3 bg-white border-2 border-indigo-100 rounded-xl text-sm focus:outline-none focus:border-indigo-500 mt-2"
+                                value={customSourceName}
+                                onChange={(e) => setCustomSourceName(e.target.value)}
+                            />
+                        )}
                     </div>
 
                     {/* Destination Selector */}
@@ -152,11 +176,21 @@ export function TransferModal({
                                 {banks.map(bank => (
                                     <option key={bank.id} value={bank.id} disabled={sourceId === bank.id.toString()}>{bank.name}</option>
                                 ))}
+                                <option value="custom">Custom (External)</option>
                             </select>
                              <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
                             </div>
                         </div>
+                        {destId === 'custom' && (
+                            <input 
+                                type="text" 
+                                placeholder="Enter Bank Name (e.g. BDO, Gcash)"
+                                className="w-full px-4 py-3 bg-white border-2 border-indigo-100 rounded-xl text-sm focus:outline-none focus:border-indigo-500 mt-2"
+                                value={customDestName}
+                                onChange={(e) => setCustomDestName(e.target.value)}
+                            />
+                        )}
                     </div>
 
                     <div className="grid grid-cols-2 gap-3 mb-6">

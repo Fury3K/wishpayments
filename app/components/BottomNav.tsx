@@ -10,7 +10,7 @@ export function BottomNav() {
     const isActive = (path: string) => pathname === path;
 
     return (
-        <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md bg-white shadow-[0_-4px_20px_rgba(0,0,0,0.03)] rounded-t-3xl px-6 py-3 z-50">
+        <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md bg-white shadow-[0_-4px_20px_rgba(0,0,0,0.03)] rounded-t-3xl px-6 pt-3 pb-[calc(1rem+env(safe-area-inset-bottom))] z-50">
             <div className="flex justify-between items-center">
                 {/* Dashboard */}
                 <Link href="/dashboard" className="flex flex-col items-center gap-1 min-w-[64px] group">

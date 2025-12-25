@@ -258,9 +258,9 @@ export default function Dashboard() {
         }
     };
 
-    const handleTransfer = async (sourceId: string, destId: string, amount: number) => {
+    const handleTransfer = async (sourceId: string, destId: string, amount: number, customSourceName?: string, customDestName?: string) => {
         try {
-            await api.post('/api/transfer', { sourceId, destinationId: destId, amount });
+            await api.post('/api/transfer', { sourceId, destinationId: destId, amount, customSourceName, customDestName });
             toast.success(`Transferred ₱${amount.toLocaleString()}!`);
             fetchData(); // Refresh data to update balances
             setIsTransferModalOpen(false);
@@ -293,7 +293,7 @@ export default function Dashboard() {
     }
 
     return (
-        <div className="bg-[#F3F4F6] font-sans text-[#1A1B2D] antialiased min-h-screen pb-24 relative">
+        <div className="bg-[#F3F4F6] font-sans text-[#1A1B2D] antialiased min-h-screen pb-[calc(6rem+env(safe-area-inset-bottom))] relative">
             <header className="flex items-center justify-between px-6 py-6 sticky top-0 bg-[#F3F4F6] z-10">
                 <h1 className="text-xl font-bold text-[#1A1B2D]">WishPay Wallet</h1>
                 <button className="w-10 h-10 rounded-full border-gray-200 flex items-center justify-center overflow-hidden">

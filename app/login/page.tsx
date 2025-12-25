@@ -1,24 +1,77 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
 
-export default function LoginPage() {
+function LoginForm() {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
-    const [error, setError] = useState('');
+    const [errors, setErrors] = useState<{ email?: string; password?: string; general?: string }>({});
     const [loading, setLoading] = useState(false);
+    const [isVerificationNeeded, setIsVerificationNeeded] = useState(false);
+    const [resendLoading, setResendLoading] = useState(false);
+
+    useEffect(() => {
+        const verified = searchParams.get('verified');
+        const error = searchParams.get('error');
+
+        if (verified === 'true') {
+            toast.success('Email verified successfully! You can now log in.');
+        } else if (error === 'invalid_token') {
+            toast.error('Invalid or expired verification token.');
+        } else if (error === 'missing_token') {
+            toast.error('Verification token is missing.');
+        } else if (error === 'server_error') {
+            toast.error('An error occurred during verification.');
+        }
+    }, [searchParams]);
+
+    const validate = () => {
+        const newErrors: { email?: string; password?: string } = {};
+        if (!email) {
+            newErrors.email = 'Email is required';
+        } else if (!/\S+@\S+\.\S+/.test(email)) {
+            newErrors.email = 'Please enter a valid email address';
+        }
+        if (!password) {
+            newErrors.password = 'Password is required';
+        }
+        return newErrors;
+    };
+
+    const handleResendVerification = async () => {
+        setResendLoading(true);
+        try {
+            await axios.post('/api/auth/resend-verification', { email });
+            toast.success('Verification email sent! Please check your inbox.');
+            setIsVerificationNeeded(false);
+            setErrors({});
+        } catch (err: any) {
+            toast.error(err.response?.data?.message || 'Failed to resend verification email');
+        } finally {
+            setResendLoading(false);
+        }
+    };
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
-        setError('');
+        setErrors({});
+        setIsVerificationNeeded(false);
+
+        const validationErrors = validate();
+        if (Object.keys(validationErrors).length > 0) {
+            setErrors(validationErrors);
+            setLoading(false);
+            return;
+        }
 
         try {
             const response = await axios.post('/api/auth/login', { email, password });
@@ -28,13 +81,98 @@ export default function LoginPage() {
                 router.push('/dashboard');
             }
         } catch (err: any) {
-            setError(err.response?.data?.message || 'Login failed');
-            toast.error(err.response?.data?.message || 'Login failed');
+            const errorMessage = err.response?.data?.message || 'Login failed';
+            setErrors({ general: errorMessage });
+            
+            if (err.response?.status === 403) {
+                setIsVerificationNeeded(true);
+            }
+            
+            toast.error(errorMessage);
         } finally {
             setLoading(false);
         }
     };
 
+    return (
+        <form className="w-full flex flex-col gap-4" onSubmit={handleLogin}>
+            <div className="relative w-full">
+                <div className="absolute left-4 top-[28px] -translate-y-1/2 text-gray-400 pointer-events-none">
+                    <Mail className={`w-5 h-5 ${errors.email ? 'text-red-500' : ''}`} />
+                </div>
+                <input
+                    aria-label="Email Address"
+                    className={`w-full bg-[#F0F2F5] text-slate-900 placeholder-gray-400 text-sm border border-transparent py-3.5 pl-11 pr-4 focus:ring-2 focus:ring-[#103B6D]/20 rounded-[12px] h-[56px] ${errors.email ? '!border-red-500 focus:!ring-red-200' : ''}`}
+                    placeholder="Email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                />
+                {errors.email && (
+                    <p className="text-red-500 text-xs mt-1 ml-1 font-medium">{errors.email}</p>
+                )}
+            </div>
+
+            <div className="relative w-full">
+                <div className="absolute left-4 top-[28px] -translate-y-1/2 text-gray-400 pointer-events-none">
+                    <Lock className={`w-5 h-5 ${errors.password ? 'text-red-500' : ''}`} />
+                </div>
+                <input
+                    aria-label="Password"
+                    className={`w-full bg-[#F0F2F5] text-slate-900 placeholder-gray-400 text-sm border border-transparent py-3.5 pl-11 pr-11 focus:ring-2 focus:ring-[#103B6D]/20 rounded-[12px] h-[56px] ${errors.password ? '!border-red-500 focus:!ring-red-200' : ''}`}
+                    placeholder="Password"
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                />
+                <button
+                    type="button"
+                    className="absolute right-4 top-[28px] -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
+                    onClick={() => setShowPassword(!showPassword)}
+                >
+                    {showPassword ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
+                </button>
+                {errors.password && (
+                    <p className="text-red-500 text-xs mt-1 ml-1 font-medium">{errors.password}</p>
+                )}
+            </div>
+
+            {errors.general && (
+                <div className="flex flex-col items-center gap-2 mt-1">
+                    <div className="text-red-500 text-sm text-center font-medium">
+                        {errors.general}
+                    </div>
+                    {isVerificationNeeded && (
+                        <button
+                            type="button"
+                            onClick={handleResendVerification}
+                            disabled={resendLoading}
+                            className="text-xs text-blue-600 hover:text-blue-800 font-semibold hover:underline disabled:opacity-50"
+                        >
+                            {resendLoading ? 'Sending...' : 'Resend Verification Email'}
+                        </button>
+                    )}
+                </div>
+            )}
+
+            <div className="w-full flex justify-end mt-1">
+                <Link className="text-sm font-medium hover:underline text-blue-900" href="/forgot-password">
+                    Forgot Password?
+                </Link>
+            </div>
+
+            <button
+                className="w-full bg-[#103B6D] hover:bg-[#0A2A4F] text-white font-semibold py-3.5 rounded-full shadow-[0_4px_14px_0_rgba(30,64,121,0.39)] mt-4 transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed flex justify-center items-center"
+                type="submit"
+                disabled={loading}
+            >
+                {loading ? <span className="loading loading-spinner loading-sm"></span> : 'Log In'}
+            </button>
+        </form>
+    );
+}
+
+export default function LoginPage() {
     return (
         <div className="min-h-screen flex items-center justify-center p-4 bg-[#F4F6F9] font-inter">
             <main className="bg-white rounded-[24px] px-8 py-12 shadow-[0_4px_20px_rgba(0,0,0,0.05)] w-full max-w-[380px] flex flex-col items-center">
@@ -57,64 +195,9 @@ export default function LoginPage() {
                     </p>
                 </header>
 
-                <form className="w-full flex flex-col gap-4" onSubmit={handleLogin}>
-                    <div className="relative w-full">
-                        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
-                            <Mail className="w-5 h-5" />
-                        </div>
-                        <input
-                            aria-label="Email Address"
-                            className="w-full bg-[#F0F2F5] text-slate-900 placeholder-gray-400 text-sm border-none py-3.5 pl-11 pr-4 focus:ring-2 focus:ring-[#103B6D]/20 rounded-[12px] h-[56px]"
-                            placeholder="Email"
-                            type="email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            required
-                        />
-                    </div>
-
-                    <div className="relative w-full">
-                        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
-                            <Lock className="w-5 h-5" />
-                        </div>
-                        <input
-                            aria-label="Password"
-                            className="w-full bg-[#F0F2F5] text-slate-900 placeholder-gray-400 text-sm border-none py-3.5 pl-11 pr-11 focus:ring-2 focus:ring-[#103B6D]/20 rounded-[12px] h-[56px]"
-                            placeholder="Password"
-                            type={showPassword ? "text" : "password"}
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            required
-                        />
-                        <button
-                            type="button"
-                            className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
-                            onClick={() => setShowPassword(!showPassword)}
-                        >
-                            {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                        </button>
-                    </div>
-
-                    {error && (
-                        <div className="text-red-500 text-sm text-center font-medium">
-                            {error}
-                        </div>
-                    )}
-
-                    <div className="w-full flex justify-end mt-1">
-                        <a className="text-sm font-medium hover:underline text-blue-900" href="#">
-                            Forgot Password?
-                        </a>
-                    </div>
-
-                    <button
-                        className="w-full bg-[#103B6D] hover:bg-[#0A2A4F] text-white font-semibold py-3.5 rounded-full shadow-[0_4px_14px_0_rgba(30,64,121,0.39)] mt-4 transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed flex justify-center items-center"
-                        type="submit"
-                        disabled={loading}
-                    >
-                        {loading ? <span className="loading loading-spinner loading-sm"></span> : 'Log In'}
-                    </button>
-                </form>
+                <Suspense fallback={<div className="loading loading-spinner loading-md"></div>}>
+                    <LoginForm />
+                </Suspense>
 
                 <div className="w-full flex items-center gap-3 mt-8 mb-6">
                     <div className="h-px bg-gray-200 flex-1"></div>

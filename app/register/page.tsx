@@ -12,28 +12,84 @@ export default function RegisterPage() {
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
-    const [error, setError] = useState('');
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+    const [errors, setErrors] = useState<{ name?: string; email?: string; password?: string; confirmPassword?: string; general?: string }>({});
     const [loading, setLoading] = useState(false);
+    const [isSuccess, setIsSuccess] = useState(false);
+
+    const validate = () => {
+        const newErrors: { name?: string; email?: string; password?: string; confirmPassword?: string } = {};
+        
+        if (!name.trim()) newErrors.name = 'Full name is required';
+        
+        if (!email) {
+            newErrors.email = 'Email is required';
+        } else if (!/\S+@\S+\.\S+/.test(email)) {
+            newErrors.email = 'Please enter a valid email address';
+        }
+
+        if (!password) {
+            newErrors.password = 'Password is required';
+        } else if (password.length < 6) {
+            newErrors.password = 'Password must be at least 6 characters';
+        }
+
+        if (password !== confirmPassword) {
+            newErrors.confirmPassword = 'Passwords do not match';
+        }
+
+        return newErrors;
+    };
 
     const handleRegister = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
-        setError('');
+        setErrors({});
+
+        const validationErrors = validate();
+        if (Object.keys(validationErrors).length > 0) {
+            setErrors(validationErrors);
+            setLoading(false);
+            return;
+        }
 
         try {
             const response = await axios.post('/api/auth/register', { name, email, password });
             if (response.status === 201) {
-                toast.success('Registration successful! Please log in.');
-                router.push('/login');
+                setIsSuccess(true);
+                toast.success('Registration successful! Please check your email to verify your account.', { duration: 5000 });
             }
         } catch (err: any) {
-            setError(err.response?.data?.message || 'Registration failed');
+            setErrors({ general: err.response?.data?.message || 'Registration failed' });
             toast.error(err.response?.data?.message || 'Registration failed');
         } finally {
             setLoading(false);
         }
     };
+
+    if (isSuccess) {
+        return (
+            <div className="min-h-screen flex items-center justify-center p-4 bg-[#F4F6F9] font-inter">
+                <main className="bg-white rounded-[24px] px-8 py-12 shadow-[0_4px_20px_rgba(0,0,0,0.05)] w-full max-w-[380px] flex flex-col items-center text-center">
+                    <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-6 text-green-600">
+                        <Mail className="w-8 h-8" />
+                    </div>
+                    <h2 className="text-2xl font-bold text-slate-900 mb-2">Verify your email</h2>
+                    <p className="text-gray-500 mb-8">
+                        We've sent a verification link to <span className="font-medium text-slate-900">{email}</span>. Please check your inbox to activate your account.
+                    </p>
+                    <Link 
+                        href="/login"
+                        className="w-full bg-[#103B6D] hover:bg-[#0A2A4F] text-white font-semibold py-3.5 rounded-full shadow-[0_4px_14px_0_rgba(30,64,121,0.39)] transition-all duration-200 block"
+                    >
+                        Go to Login
+                    </Link>
+                </main>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen flex items-center justify-center p-4 bg-[#F4F6F9] font-inter">
@@ -59,60 +115,90 @@ export default function RegisterPage() {
 
                 <form className="w-full flex flex-col gap-4" onSubmit={handleRegister}>
                     <div className="relative w-full">
-                        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
-                            <User className="w-5 h-5" />
+                        <div className="absolute left-4 top-[28px] -translate-y-1/2 text-gray-400 pointer-events-none">
+                            <User className={`w-5 h-5 ${errors.name ? 'text-red-500' : ''}`} />
                         </div>
                         <input
                             aria-label="Full Name"
-                            className="w-full bg-[#F0F2F5] text-slate-900 placeholder-gray-400 text-sm border-none py-3.5 pl-11 pr-4 focus:ring-2 focus:ring-[#103B6D]/20 rounded-[12px] h-[56px]"
+                            className={`w-full bg-[#F0F2F5] text-slate-900 placeholder-gray-400 text-sm border border-transparent py-3.5 pl-11 pr-4 focus:ring-2 focus:ring-[#103B6D]/20 rounded-[12px] h-[56px] ${errors.name ? '!border-red-500 focus:!ring-red-200' : ''}`}
                             placeholder="Full Name"
                             type="text"
                             value={name}
                             onChange={(e) => setName(e.target.value)}
-                            required
                         />
+                        {errors.name && (
+                            <p className="text-red-500 text-xs mt-1 ml-1 font-medium">{errors.name}</p>
+                        )}
                     </div>
 
                     <div className="relative w-full">
-                        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
-                            <Mail className="w-5 h-5" />
+                        <div className="absolute left-4 top-[28px] -translate-y-1/2 text-gray-400 pointer-events-none">
+                            <Mail className={`w-5 h-5 ${errors.email ? 'text-red-500' : ''}`} />
                         </div>
                         <input
                             aria-label="Email Address"
-                            className="w-full bg-[#F0F2F5] text-slate-900 placeholder-gray-400 text-sm border-none py-3.5 pl-11 pr-4 focus:ring-2 focus:ring-[#103B6D]/20 rounded-[12px] h-[56px]"
+                            className={`w-full bg-[#F0F2F5] text-slate-900 placeholder-gray-400 text-sm border border-transparent py-3.5 pl-11 pr-4 focus:ring-2 focus:ring-[#103B6D]/20 rounded-[12px] h-[56px] ${errors.email ? '!border-red-500 focus:!ring-red-200' : ''}`}
                             placeholder="Email"
                             type="email"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
-                            required
                         />
+                        {errors.email && (
+                            <p className="text-red-500 text-xs mt-1 ml-1 font-medium">{errors.email}</p>
+                        )}
                     </div>
 
                     <div className="relative w-full">
-                        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
-                            <Lock className="w-5 h-5" />
+                        <div className="absolute left-4 top-[28px] -translate-y-1/2 text-gray-400 pointer-events-none">
+                            <Lock className={`w-5 h-5 ${errors.password ? 'text-red-500' : ''}`} />
                         </div>
                         <input
                             aria-label="Password"
-                            className="w-full bg-[#F0F2F5] text-slate-900 placeholder-gray-400 text-sm border-none py-3.5 pl-11 pr-11 focus:ring-2 focus:ring-[#103B6D]/20 rounded-[12px] h-[56px]"
+                            className={`w-full bg-[#F0F2F5] text-slate-900 placeholder-gray-400 text-sm border border-transparent py-3.5 pl-11 pr-11 focus:ring-2 focus:ring-[#103B6D]/20 rounded-[12px] h-[56px] ${errors.password ? '!border-red-500 focus:!ring-red-200' : ''}`}
                             placeholder="Password"
                             type={showPassword ? "text" : "password"}
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
-                            required
                         />
                         <button
                             type="button"
-                            className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
+                            className="absolute right-4 top-[28px] -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
                             onClick={() => setShowPassword(!showPassword)}
                         >
-                            {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                            {showPassword ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
                         </button>
+                        {errors.password && (
+                            <p className="text-red-500 text-xs mt-1 ml-1 font-medium">{errors.password}</p>
+                        )}
                     </div>
 
-                    {error && (
-                        <div className="text-red-500 text-sm text-center font-medium">
-                            {error}
+                    <div className="relative w-full">
+                        <div className="absolute left-4 top-[28px] -translate-y-1/2 text-gray-400 pointer-events-none">
+                            <Lock className={`w-5 h-5 ${errors.confirmPassword ? 'text-red-500' : ''}`} />
+                        </div>
+                        <input
+                            aria-label="Confirm Password"
+                            className={`w-full bg-[#F0F2F5] text-slate-900 placeholder-gray-400 text-sm border border-transparent py-3.5 pl-11 pr-11 focus:ring-2 focus:ring-[#103B6D]/20 rounded-[12px] h-[56px] ${errors.confirmPassword ? '!border-red-500 focus:!ring-red-200' : ''}`}
+                            placeholder="Confirm Password"
+                            type={showConfirmPassword ? "text" : "password"}
+                            value={confirmPassword}
+                            onChange={(e) => setConfirmPassword(e.target.value)}
+                        />
+                        <button
+                            type="button"
+                            className="absolute right-4 top-[28px] -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
+                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        >
+                            {showConfirmPassword ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
+                        </button>
+                         {errors.confirmPassword && (
+                            <p className="text-red-500 text-xs mt-1 ml-1 font-medium">{errors.confirmPassword}</p>
+                        )}
+                    </div>
+
+                    {errors.general && (
+                        <div className="text-red-500 text-sm text-center font-medium mt-1">
+                            {errors.general}
                         </div>
                     )}
 

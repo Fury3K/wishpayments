@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, ArrowUpDown, Coffee, ShoppingCart, CreditCard, Bus, Gift, Search, Filter, ChevronLeft, Wallet, ArrowDownLeft, ArrowUpRight, RefreshCw, Archive } from 'lucide-react';
+import { ArrowLeft, ArrowUpDown, Coffee, ShoppingCart, CreditCard, Bus, Gift, Search, Filter, ChevronLeft, Wallet, ArrowDownLeft, ArrowUpRight, RefreshCw, Archive, Menu } from 'lucide-react';
 import api from '@/lib/api';
 import { Item, BankAccount } from '../types';
 import { BottomNav } from '../components/BottomNav';
@@ -28,8 +28,9 @@ export default function HistoryPage() {
     const [banks, setBanks] = useState<BankAccount[]>([]);
     const [isWalletHidden, setIsWalletHidden] = useState(false);
     const [loading, setLoading] = useState(true);
+    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+    const [isFilterMenuOpen, setIsFilterMenuOpen] = useState(false);
 
-    const { ref: typeFilterRef, events: typeFilterEvents } = useDraggableScroll();
     const { ref: bankFilterRef, events: bankFilterEvents } = useDraggableScroll();
 
     useEffect(() => {
@@ -116,55 +117,63 @@ export default function HistoryPage() {
         }
         
         const groups: { [key: string]: any[] } = {};
-        
-        data.forEach(item => {
-            let dateStr: string | null | undefined = null;
-            if ('description' in item) {
-                dateStr = (item as Transaction).date;
-            } else {
-                dateStr = (item as Item).dateArchived;
-            }
-            
-            if (!dateStr) return;
-            const date = new Date(dateStr).toLocaleDateString('en-US', {
+
+        const getFullDateString = (d: string) => {
+             return new Date(d).toLocaleDateString('en-US', {
                 month: 'long',
                 day: 'numeric',
                 year: 'numeric'
             });
-            
-            const today = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-            const yesterdayDate = new Date();
-            yesterdayDate.setDate(yesterdayDate.getDate() - 1);
-            const yesterday = yesterdayDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+        };
 
-            let displayDate = date;
-            if (date === today) displayDate = `Today, ${date.split(',')[0]}`;
-            else if (date === yesterday) displayDate = `Yesterday, ${date.split(',')[0]}`;
-
-            if (!groups[displayDate]) {
-                groups[displayDate] = [];
+        const todayDate = new Date();
+        const todayStr = getFullDateString(todayDate.toISOString());
+        
+        const yesterdayDate = new Date();
+        yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+        const yesterdayStr = getFullDateString(yesterdayDate.toISOString());
+        
+        data.forEach(item => {
+            let rawDateStr: string | null | undefined = null;
+            if ('description' in item) {
+                rawDateStr = (item as Transaction).date;
+            } else {
+                rawDateStr = (item as Item).dateArchived;
             }
-            groups[displayDate].push(item);
+            
+            if (!rawDateStr) return;
+            const dateKey = getFullDateString(rawDateStr);
+            
+            if (!groups[dateKey]) {
+                groups[dateKey] = [];
+            }
+            groups[dateKey].push(item);
         });
 
         const sortedKeys = Object.keys(groups).sort((a, b) => {
-             const dateA = new Date(a.replace('Today, ', '').replace('Yesterday, ', ''));
-             const dateB = new Date(b.replace('Today, ', '').replace('Yesterday, ', ''));
-             return dateB.getTime() - dateA.getTime();
+             const timeA = new Date(a).getTime();
+             const timeB = new Date(b).getTime();
+             return sortOrder === 'desc' 
+                ? timeB - timeA
+                : timeA - timeB;
         });
 
-        return sortedKeys.reduce((obj, key) => {
-            // Sort items within each group by time (descending)
-            const sortedGroup = groups[key].sort((a, b) => {
-                const dateA = new Date(('description' in a ? (a as Transaction).date : (a as Item).dateArchived) || 0);
-                const dateB = new Date(('description' in b ? (b as Transaction).date : (b as Item).dateArchived) || 0);
-                return dateB.getTime() - dateA.getTime();
-            });
-            obj[key] = sortedGroup;
-            return obj;
-        }, {} as { [key: string]: any[] });
+        // Return an array to guarantee order
+        return sortedKeys.map(key => {
+            let displayLabel = key;
+            if (key === todayStr) {
+                displayLabel = `Today, ${key.split(',')[0]}`;
+            } else if (key === yesterdayStr) {
+                displayLabel = `Yesterday, ${key.split(',')[0]}`;
+            }
 
-    }, [filteredItems, filteredTransactions, filter]);
+            return {
+                date: displayLabel,
+                items: groups[key]
+            };
+        });
+
+    }, [filteredItems, filteredTransactions, filter, sortOrder]);
 
     const getBankColorClass = (bankId: number | null | undefined) => {
         if (!bankId) return 'bg-blue-500'; // Wallet default
@@ -203,58 +212,67 @@ export default function HistoryPage() {
     }
 
     return (
-        <div className="bg-slate-50 text-[#1F2937] font-sans antialiased min-h-screen pb-24 flex flex-col">
+        <div className="bg-slate-50 text-[#1F2937] font-sans antialiased min-h-screen pb-[calc(6rem+env(safe-area-inset-bottom))] flex flex-col">
             {/* Header */}
-            <header className="sticky top-0 z-10 bg-slate-50 px-4 py-4 flex items-center justify-between">
-                <Link href="/dashboard" className="p-2 -ml-2 rounded-full active:bg-gray-200 transition-colors">
-                    <ChevronLeft className="w-6 h-6 text-slate-800" />
-                </Link>
-                <h1 className="text-xl font-bold text-slate-800">History</h1>
-                <button className="p-2 -mr-2 rounded-full active:bg-gray-200 transition-colors">
-                    <ArrowUpDown className="w-5 h-5 text-slate-800" />
-                </button>
+            <header className="sticky top-0 z-10 bg-slate-50 px-4 py-4 flex items-center justify-between relative min-h-[72px]">
+                <div className="z-20 flex items-center">
+                    <Link href="/dashboard" className="p-2 -ml-2 rounded-full active:bg-gray-200 transition-colors">
+                        <ChevronLeft className="w-6 h-6 text-slate-800" />
+                    </Link>
+                </div>
+
+                <h1 className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-xl font-bold text-slate-800 whitespace-nowrap">
+                    History
+                </h1>
+
+                <div className="flex items-center gap-1 z-20">
+                    <button 
+                        onClick={() => setSortOrder(prev => prev === 'desc' ? 'asc' : 'desc')}
+                        className="p-2 rounded-full active:bg-gray-200 transition-colors"
+                    >
+                        <ArrowUpDown className={`w-5 h-5 text-slate-800 transition-transform duration-300 ${sortOrder === 'asc' ? 'rotate-180' : ''}`} />
+                    </button>
+                    <button 
+                        onClick={() => setIsFilterMenuOpen(!isFilterMenuOpen)}
+                        className={`p-2 -mr-2 rounded-full transition-colors ${isFilterMenuOpen ? 'bg-blue-100 text-blue-600' : 'active:bg-gray-200 text-slate-800'}`}
+                    >
+                        <Menu className="w-6 h-6" />
+                    </button>
+                </div>
+
+                {/* Filter Dropdown */}
+                {isFilterMenuOpen && (
+                    <>
+                        <div className="fixed inset-0 z-10" onClick={() => setIsFilterMenuOpen(false)}></div>
+                        <div className="absolute top-full right-4 mt-2 w-48 bg-white rounded-2xl shadow-xl z-20 overflow-hidden border border-gray-100 p-1.5 flex flex-col gap-1">
+                            {[
+                                { id: 'everything', label: 'All' },
+                                { id: 'all', label: 'Purchase History' },
+                                { id: 'need', label: 'Needs' },
+                                { id: 'want', label: 'Wants' },
+                                { id: 'cash-flow', label: 'Cash Flow' }
+                            ].map((option) => (
+                                <button
+                                    key={option.id}
+                                    onClick={() => {
+                                        setFilter(option.id as any);
+                                        setIsFilterMenuOpen(false);
+                                    }}
+                                    className={`w-full text-left px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors ${
+                                        filter === option.id 
+                                            ? 'bg-blue-50 text-blue-600' 
+                                            : 'text-gray-600 hover:bg-gray-50'
+                                    }`}
+                                >
+                                    {option.label}
+                                </button>
+                            ))}
+                        </div>
+                    </>
+                )}
             </header>
 
             <main className="px-4 pb-24 w-full max-w-md mx-auto flex-1">
-                {/* Type Filter Tabs */}
-                <nav 
-                    aria-label="Transaction Type Filters" 
-                    className="flex items-center gap-2 overflow-x-auto no-scrollbar bg-white p-1 rounded-full shadow-sm mb-4 cursor-grab"
-                    ref={typeFilterRef}
-                    {...typeFilterEvents}
-                >
-                    <button 
-                        onClick={() => setFilter('everything')}
-                        className={`flex-none px-6 py-1.5 rounded-full text-sm font-medium transition-all ${filter === 'everything' ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-500 hover:bg-gray-50'}`}
-                    >
-                        All
-                    </button>
-                    <button 
-                        onClick={() => setFilter('all')}
-                        className={`flex-none px-6 py-1.5 rounded-full text-sm font-medium transition-all ${filter === 'all' ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-500 hover:bg-gray-50'}`}
-                    >
-                        Purchase History
-                    </button>
-                    <button 
-                        onClick={() => setFilter('need')}
-                        className={`flex-none px-6 py-1.5 rounded-full text-sm font-medium transition-all ${filter === 'need' ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-500 hover:bg-gray-50'}`}
-                    >
-                        Needs
-                    </button>
-                    <button 
-                        onClick={() => setFilter('want')}
-                        className={`flex-none px-6 py-1.5 rounded-full text-sm font-medium transition-all ${filter === 'want' ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-500 hover:bg-gray-50'}`}
-                    >
-                        Wants
-                    </button>
-                    <button 
-                        onClick={() => setFilter('cash-flow')}
-                        className={`flex-none px-6 py-1.5 rounded-full text-sm font-medium transition-all ${filter === 'cash-flow' ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-500 hover:bg-gray-50'}`}
-                    >
-                        Cash Flow
-                    </button>
-                </nav>
-
                 {/* Bank Source Filter */}
                 <div 
                     className="mb-6 flex gap-2 overflow-x-auto no-scrollbar pb-1 cursor-grab"
@@ -308,12 +326,12 @@ export default function HistoryPage() {
                 )}
 
                 {/* Grouped Data */}
-                {Object.keys(groupedData).length === 0 ? (
+                {groupedData.length === 0 ? (
                     <div className="text-center py-10 text-gray-400">
                         <p>No {filter === 'cash-flow' ? 'transactions' : 'purchases'} found.</p>
                     </div>
                 ) : (
-                    Object.entries(groupedData).map(([date, group]) => (
+                    groupedData.map(({ date, items: group }) => (
                         <section key={date} className="mb-6">
                             <h2 className="text-sm font-semibold text-gray-800 mb-3 ml-1">{date}</h2>
                             <div className="">

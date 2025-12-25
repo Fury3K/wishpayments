@@ -17,6 +17,24 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "WishPay",
   description: "Track your Needs and Wants savings",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    title: "WishPay",
+    statusBarStyle: "default",
+  },
+  icons: {
+    icon: "/icon.png",
+    apple: "/icon.png",
+  },
+};
+
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({

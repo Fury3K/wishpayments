@@ -22,20 +22,31 @@ export async function POST(req: Request) {
             return addCorsHeaders(NextResponse.json({ message: 'Unauthorized' }, { status: 401 }));
         }
 
-        const { sourceId, destinationId, amount } = await req.json();
+        const { sourceId, destinationId, amount, customSourceName, customDestName } = await req.json();
 
         // Validation
         if (!sourceId || !destinationId || !amount || amount <= 0) {
              return addCorsHeaders(NextResponse.json({ message: 'Invalid transfer details' }, { status: 400 }));
         }
-        if (sourceId === destinationId) {
+        if (sourceId === destinationId && sourceId !== 'custom') {
              return addCorsHeaders(NextResponse.json({ message: 'Cannot transfer to same account' }, { status: 400 }));
+        }
+        if (sourceId === 'custom' && destinationId === 'custom') {
+             return addCorsHeaders(NextResponse.json({ message: 'Cannot transfer between two external accounts' }, { status: 400 }));
+        }
+        if (sourceId === 'custom' && !customSourceName) {
+             return addCorsHeaders(NextResponse.json({ message: 'External source name is required' }, { status: 400 }));
+        }
+        if (destinationId === 'custom' && !customDestName) {
+             return addCorsHeaders(NextResponse.json({ message: 'External destination name is required' }, { status: 400 }));
         }
 
         await db.transaction(async (tx) => {
-            // 1. Deduct from Source
+            // 1. Deduct from Source (if internal)
             let sourceName = '';
-            if (sourceId === 'wallet') {
+            if (sourceId === 'custom') {
+                sourceName = customSourceName || 'External Bank';
+            } else if (sourceId === 'wallet') {
                 const userRes = await tx.select().from(users).where(eq(users.id, userId));
                 if (!userRes[0] || userRes[0].balance < amount) throw new Error('Insufficient wallet balance');
                 await tx.update(users).set({ balance: userRes[0].balance - amount }).where(eq(users.id, userId));
@@ -47,9 +58,11 @@ export async function POST(req: Request) {
                 sourceName = bankRes[0].name;
             }
 
-            // 2. Add to Destination
+            // 2. Add to Destination (if internal)
             let destName = '';
-            if (destinationId === 'wallet') {
+            if (destinationId === 'custom') {
+                destName = customDestName || 'External Bank';
+            } else if (destinationId === 'wallet') {
                 const userRes = await tx.select().from(users).where(eq(users.id, userId));
                 await tx.update(users).set({ balance: userRes[0].balance + amount }).where(eq(users.id, userId));
                 destName = 'WishPay Wallet';
@@ -60,29 +73,33 @@ export async function POST(req: Request) {
                 destName = bankRes[0].name;
             }
 
-            // 3. Log Transactions (Two records: Outgoing and Incoming)
+            // 3. Log Transactions
             
-            // Outgoing Record
-            await tx.insert(transactions).values({
-                userId,
-                amount,
-                type: 'transfer',
-                description: `Transferred to ${destName}`,
-                bankId: sourceId === 'wallet' ? null : parseInt(sourceId),
-                itemId: null,
-                date: new Date()
-            });
+            // If Source is Internal, log the deduction
+            if (sourceId !== 'custom') {
+                await tx.insert(transactions).values({
+                    userId,
+                    amount,
+                    type: 'transfer',
+                    description: `Transferred to ${destName}`,
+                    bankId: sourceId === 'wallet' ? null : parseInt(sourceId),
+                    itemId: null,
+                    date: new Date()
+                });
+            }
             
-            // Incoming Record
-            await tx.insert(transactions).values({
-                userId,
-                amount,
-                type: 'transfer', 
-                description: `Transferred from ${sourceName}`,
-                bankId: destinationId === 'wallet' ? null : parseInt(destinationId),
-                itemId: null,
-                date: new Date() // Same timestamp
-            });
+            // If Dest is Internal, log the addition
+            if (destinationId !== 'custom') {
+                await tx.insert(transactions).values({
+                    userId,
+                    amount,
+                    type: 'transfer', 
+                    description: `Transferred from ${sourceName}`,
+                    bankId: destinationId === 'wallet' ? null : parseInt(destinationId),
+                    itemId: null,
+                    date: new Date() // Same timestamp
+                });
+            }
         });
 
         return addCorsHeaders(NextResponse.json({ message: 'Transfer successful' }, { status: 200 }));
