@@ -24,6 +24,9 @@ export const metadata: Metadata = {
     title: "WishPay",
     statusBarStyle: "default",
   },
+  formatDetection: {
+    telephone: false,
+  },
 };
 
 export const viewport = {
