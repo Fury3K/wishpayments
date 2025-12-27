@@ -223,9 +223,16 @@ export default function Home() {
                             Login
                         </Link>
                     </div>
-                    <a className="text-xs text-gray-500 underline decoration-gray-300 hover:text-[#103B6D] mb-6" href="#">
+                    <a className="text-xs text-gray-500 underline decoration-gray-300 hover:text-[#103B6D] mb-4" href="#">
                         Learn More About Our Features
                     </a>
+                    
+                    <div className="flex gap-4 mb-4">
+                        <Link href="/terms" className="text-[11px] text-gray-400 hover:text-[#103B6D] transition-colors">
+                            Terms of Service
+                        </Link>
+                    </div>
+
                     <div className="text-[10px] text-gray-400">
                         © {new Date().getFullYear()} WishPay. All rights reserved.
                     </div>
