@@ -12,7 +12,7 @@ export async function GET(req: Request) {
     const code = searchParams.get('code');
     const error = searchParams.get('error');
 
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || req.url;
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL;
 
     if (error) {
         return NextResponse.redirect(new URL(`/auth-sync?error=${encodeURIComponent('Facebook login failed: ' + error)}`, baseUrl));
