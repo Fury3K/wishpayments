@@ -223,9 +223,9 @@ export default function Home() {
                             Login
                         </Link>
                     </div>
-                    <a className="text-xs text-gray-500 underline decoration-gray-300 hover:text-[#103B6D] mb-4" href="#">
+                    <Link className="text-xs text-gray-500 underline decoration-gray-300 hover:text-[#103B6D] mb-4" href="/features">
                         Learn More About Our Features
-                    </a>
+                    </Link>
                     
                     <div className="flex gap-4 mb-4">
                         <Link href="/terms" className="text-[11px] text-gray-400 hover:text-[#103B6D] transition-colors">

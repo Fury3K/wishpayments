@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { ChevronLeft, User, Mail, Lock, LogOut, Save, Camera } from 'lucide-react';
+import { ChevronLeft, User, Mail, Lock, LogOut, Save, Camera, Shield, ChevronRight } from 'lucide-react';
 import api from '@/lib/api';
 import { toast } from 'react-hot-toast';
 import { BottomNav } from '../components/BottomNav';
@@ -265,6 +265,14 @@ export default function ProfilePage() {
                         </button>
                     </form>
                 </div>
+
+                <Link href="/profile/privacy" className="w-full py-4 rounded-xl bg-white text-[#1A1B2D] font-bold text-lg shadow-[0_10px_30px_-5px_rgba(0,0,0,0.03)] hover:shadow-lg transition-all flex items-center justify-between px-6 mb-4">
+                    <div className="flex items-center gap-3">
+                        <Shield className="w-5 h-5 text-gray-500" />
+                        <span>Privacy & Data</span>
+                    </div>
+                    <ChevronRight className="w-5 h-5 text-gray-400" />
+                </Link>
 
                 <button
                     onClick={handleLogout}
