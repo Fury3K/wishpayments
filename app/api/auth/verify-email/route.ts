@@ -7,7 +7,7 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const token = searchParams.get('token');
   
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || req.url;
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL;
 
   if (!token) {
     return NextResponse.redirect(new URL('/login?error=missing_token', baseUrl));
